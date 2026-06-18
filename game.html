@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PkmnJourney — Play</title>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:48px;flex-shrink:0;}
+.nav-logo{font-size:16px;font-weight:bold;color:var(--text-on-dark);text-transform:uppercase;letter-spacing:2px;text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.nav-links{display:flex;gap:4px;align-items:center;}
+.nav-links a{color:var(--text-on-dark);font-size:11px;text-decoration:none;text-transform:uppercase;letter-spacing:1px;padding:5px 8px;opacity:.7;}
+.nav-links a:hover{opacity:1;}
+
+.screen{display:none;flex:1;flex-direction:column;align-items:center;padding:16px;overflow-y:auto;}
+.screen.active{display:flex;}
+
+.card{background:var(--card);border:2px solid var(--border);padding:20px;width:100%;max-width:700px;box-shadow:4px 4px 0 var(--border);position:relative;margin-top:12px;}
+.card-title{font-size:18px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;text-align:center;color:var(--text);margin-bottom:2px;}
+.card-sub{font-size:10px;text-align:center;color:var(--light);margin-bottom:16px;line-height:1.5;}
+
+.btn{font-family:var(--font);font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px 18px;cursor:pointer;border:2px solid var(--border);display:inline-block;transition:all .1s;}
+.btn-dark{background:var(--dark);color:var(--text-on-dark);border-color:var(--dark);}
+.btn-dark:hover{background:var(--mid);border-color:var(--mid);}
+.btn-dark:disabled{opacity:.4;cursor:default;}
+.btn-outline{background:transparent;color:var(--text);border-color:var(--border);}
+.btn-outline:hover{background:var(--dark);color:var(--text-on-dark);border-color:var(--dark);}
+.btn-accent{background:var(--accent);color:var(--dark);border-color:var(--accent);font-weight:bold;}
+.btn-full{width:100%;display:block;text-align:center;margin-top:6px;}
+
+.opt{background:var(--muted);border:2px solid var(--border);padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .1s;}
+.opt:hover{border-color:var(--accent);}
+.opt.selected{background:var(--dark);border-color:var(--accent);}
+.opt-label{font-size:12px;font-weight:bold;color:var(--text);}
+.opt.selected .opt-label{color:var(--text-on-dark);}
+.opt-desc{font-size:10px;color:var(--light);margin-top:2px;line-height:1.5;}
+.opt.selected .opt-desc{color:var(--accent);}
+.opt-prefix{color:var(--accent);margin-right:4px;}
+
+.section-head{font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:16px 0 6px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+
+.team-bar{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;}
+.team-slot{background:var(--muted);border:2px solid var(--border);width:90px;height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.team-slot img{width:52px;height:52px;image-rendering:pixelated;}
+.team-slot .slot-name{font-size:8px;color:var(--text);text-align:center;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;}
+.team-slot.filled{background:var(--card);border-color:var(--accent);}
+.team-slot .slot-empty{font-size:24px;color:var(--border);}
+
+.tag{font-size:8px;padding:1px 4px;border-radius:2px;font-weight:bold;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);display:inline-block;}
+
+.pool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;max-height:320px;overflow-y:auto;border:2px solid var(--border);padding:6px;margin-bottom:8px;background:var(--muted);}
+.mon-card{background:var(--card);border:2px solid var(--border);padding:6px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .1s;}
+.mon-card:hover{border-color:var(--accent);}
+.mon-card.shiny{border-color:#c0a020;background:#fdf8e0;}
+.mon-card img{width:60px;height:60px;image-rendering:pixelated;}
+.mon-name{font-size:9px;font-weight:bold;color:var(--text);text-align:center;margin:4px 0 2px;}
+.mon-bst{font-size:8px;color:var(--light);margin-top:2px;}
+
+.rolled-banner{background:var(--dark);color:var(--text-on-dark);padding:8px 12px;margin-bottom:8px;font-size:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-left:3px solid var(--accent);}
+
+.loading{text-align:center;padding:48px 24px;color:var(--light);}
+.spin{font-size:28px;margin-bottom:8px;display:block;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Battle log ── */
+.battle-log{border:2px solid var(--border);height:300px;overflow-y:auto;background:var(--muted);padding:4px;}
+.battle-row{cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 6px;border-bottom:1px solid var(--border);font-size:10px;}
+.battle-row:hover{background:var(--border);}
+.b-icon{width:22px;text-align:center;flex-shrink:0;}
+.b-result{width:14px;text-align:center;flex-shrink:0;font-weight:bold;}
+.b-name{color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:bold;}
+.b-type{font-size:8px;flex-shrink:0;color:var(--light);}
+.b-verdict{font-size:9px;flex-shrink:0;min-width:36px;text-align:right;font-weight:bold;}
+
+/* ── Matchup detail ── */
+.battle-detail{display:none;padding:8px;background:var(--card);border-bottom:1px solid var(--border);}
+.battle-detail.open{display:block;}
+.battle-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:6px;}
+.battle-matchup{border:1px solid var(--border);padding:6px 8px;display:flex;flex-direction:column;gap:3px;background:var(--muted);}
+.bm-mine{color:var(--accent);font-weight:bold;font-size:9px;}
+.bm-enemy{color:var(--text);font-size:9px;}
+.bm-result{font-size:8px;font-weight:bold;margin-top:2px;}
+.bm-win{color:var(--win,#4caf50);}
+.bm-loss{color:var(--loss,#ef4444);}
+
+.gen-pills{display:flex;gap:3px;margin-top:8px;flex-wrap:wrap;}
+.gen-pill{border:1px solid var(--border);padding:2px 8px;font-size:9px;color:var(--text);}
+.gen-pill.done-win{background:var(--dark);color:var(--text-on-dark);border-color:var(--accent);}
+.gen-pill.done-loss{color:var(--loss,#ef4444);border-color:var(--loss,#ef4444);}
+
+/* ── Stat bars (hard mode) ── */
+.stat-bar-wrap{margin-top:4px;width:100%;}
+.stat-row{display:flex;align-items:center;gap:4px;margin-bottom:2px;}
+.stat-row-label{font-size:7px;color:var(--light);width:22px;flex-shrink:0;text-transform:uppercase;}
+.stat-row-bar{flex:1;height:4px;background:var(--border);}
+.stat-row-fill{height:100%;background:var(--accent);}
+.mon-card.shiny .stat-row-fill{background:#c0a020;}
+
+/* ── Results stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin-bottom:10px;}
+.stat-box-dark{background:var(--dark);border:2px solid var(--border);padding:10px 6px;}
+.stat-val{font-size:22px;font-weight:bold;color:var(--text-on-dark);}
+.stat-lbl{font-size:8px;color:var(--accent);letter-spacing:1px;margin-top:2px;}
+.gen-result-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);}
+
+/* ── Achievements ── */
+.ach-badge{background:var(--dark);color:var(--text-on-dark);border:2px solid var(--accent);padding:5px 8px;font-size:10px;display:flex;align-items:center;gap:6px;}
+.achievement-list{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+
+/* ── Toast ── */
+#toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--dark);border:2px solid var(--accent);color:var(--text-on-dark);padding:10px 14px;font-family:var(--font);font-size:11px;box-shadow:4px 4px 0 var(--border);animation:toastIn .3s ease;max-width:280px;}
+.toast-title{font-weight:bold;font-size:12px;margin-bottom:2px;}
+.toast-desc{font-size:10px;color:var(--accent);}
+@keyframes toastIn{from{transform:translateX(40px);opacity:0;}to{transform:none;opacity:1;}}
+
+/* ── Misc ── */
+.ad-slot{background:#1a1a1a;color:#555;font-size:10px;text-align:center;padding:4px;border:1px dashed #444;min-height:50px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--card);border:3px solid var(--border);box-shadow:6px 6px 0 var(--border);padding:24px;width:100%;max-width:360px;position:relative;}
+.modal-close{position:absolute;top:8px;right:8px;background:transparent;color:var(--light);border:1px solid var(--border);font-family:var(--font);font-size:12px;padding:3px 8px;cursor:pointer;}
+
+@media(max-width:500px){
+  .team-slot{width:70px;height:72px;}
+  .team-slot img{width:40px;height:40px;}
+  nav{padding:0 10px;}
+  .pool-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));}
+  .battle-detail-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav></nav>
+
+<!-- SETTINGS MODAL — palette managed by shared.js pkmnInjectSettingsModal -->
+
+<!-- SETUP -->
+<div class="screen active" id="screen-setup">
+  <div class="card">
+    <div class="card-title">New Journey</div>
+    <div class="card-sub">Configure your run</div>
+    <div class="ad-slot">[ Ad Banner ]</div>
+    <div class="section-head">📍 Journey</div>
+    <div class="opt selected" data-group="journey" data-val="gen1" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">Kanto Only (Gen 1)</span><div class="opt-desc">8 gyms + Pokémon League</div></div>
+    <div class="opt" data-group="journey" data-val="all" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">All Regions (Gen 1–8)</span><div class="opt-desc">Kanto through Galar</div></div>
+    <div id="teamModeSection" style="display:none;">
+      <div class="section-head">👥 Team</div>
+      <div class="opt selected" data-group="team" data-val="same" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔒 Keep Same Team</span><div class="opt-desc">One team of 6 all the way</div></div>
+      <div class="opt" data-group="team" data-val="redraft" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🔄 Redraft Each Region</span><div class="opt-desc">Fresh draft before every region</div></div>
+    </div>
+    <div class="section-head">🎲 Draft Mode</div>
+    <div class="opt selected" data-group="draft" data-val="random10" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔀 Random Pick</span><div class="opt-desc">10 random Pokémon (1 per gen if all-gens), pick 1</div></div>
+    <div class="opt" data-group="draft" data-val="typeroll" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🎰 Type Roll</span><div class="opt-desc">A gen + type is rolled — pick from all matching Pokémon</div></div>
+    <button class="btn btn-dark btn-full" onclick="goToDraft()" style="margin-top:16px;">▶ Start Draft</button>
+  </div>
+</div>
+
+<!-- DRAFT -->
+<div class="screen" id="screen-draft">
+  <div class="card">
+    <div class="card-title" id="draftTitle">Draft Your Team</div>
+    <div class="card-sub" id="draftSub"></div>
+    <div class="team-bar" id="teamBar"></div>
+    <div id="rolledBanner" class="rolled-banner" style="display:none;"></div>
+    <div id="poolLoading" class="loading" style="display:none;"><span class="spin">⏳</span><div>Fetching from PokéAPI…</div></div>
+    <div id="poolError" style="display:none;color:#c62828;font-size:11px;text-align:center;padding:20px;">Failed to load. Check your connection and reroll.</div>
+    <div id="poolEmpty" style="display:none;text-align:center;padding:24px;font-size:11px;color:var(--mid);">No Pokémon found. Use a reroll!</div>
+    <div class="pool-grid" id="poolGrid" style="display:none;"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+      <button class="btn btn-outline" id="rerollBtn" onclick="doReroll()">🔄 Reroll (<span id="rerollCount">3</span>)</button>
+      <div style="flex:1;font-size:10px;color:var(--mid);" id="pickStatus"></div>
+    </div>
+    <div id="teamDoneSection" style="display:none;text-align:center;padding:12px 0;">
+      <div style="font-size:13px;color:var(--dark);margin-bottom:10px;">✅ Team complete!</div>
+      <button class="btn btn-dark" onclick="startJourney()">▶ Start Journey</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOURNEY -->
+<div class="screen" id="screen-journey">
+  <div class="card">
+    <div class="card-title">The Journey</div>
+    <div class="team-bar" id="journeyTeamBar"></div>
+    <div id="simStatus" style="display:none;text-align:center;font-size:11px;color:var(--mid);padding:5px;border:1px solid var(--mid);background:var(--card);margin-bottom:8px;">⚔️ Simulating battles…</div>
+    <div class="battle-log" id="battleLog"></div>
+    <div class="gen-pills" id="genPills"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+      <div style="flex:1;font-size:11px;" id="totalScore"></div>
+      <button class="btn btn-outline" id="nextRegionBtn" style="display:none;" onclick="window._continueJourney&&window._continueJourney()"><span id="nextRegionLabel"></span></button>
+      <button class="btn btn-dark" id="resultsBtn" style="display:none;" onclick="goToResults()">▶ Results</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="screen" id="screen-results">
+  <div class="card">
+    <div style="text-align:center;margin-bottom:12px;">
+      <div style="font-size:44px;" id="resultMedal"></div>
+      <div class="card-title" id="resultRank"></div>
+      <div class="card-sub">Journey Complete — pkmnjourney.com</div>
+    </div>
+    <div class="team-bar" id="resultsTeamBar" style="justify-content:center;"></div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div id="genBreakdown"></div>
+    <div id="achSection" style="display:none;">
+      <div class="section-head">🏅 Achievements Unlocked</div>
+      <div class="achievement-list" id="achList"></div>
+    </div>
+    <div class="section-head">📤 Share Your Run</div>
+    <canvas id="shareCanvas" style="display:none;"></canvas>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-dark" onclick="generateShareCard()">🖼 Generate Card</button>
+      <button class="btn btn-outline" id="downloadBtn" style="display:none;" onclick="downloadCard()">⬇ Download PNG</button>
+    </div>
+    <img id="sharePreview" style="display:none;width:100%;margin-top:10px;border:2px solid var(--border);" alt="Share card"/>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-dark" onclick="goToSetup()">▶ Play Again</button>
+      <button class="btn btn-outline" onclick="showScreen('journey')">◀ Battle Log</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+// ENEMY DATA
+// ═══════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+const BASE = "https://pokeapi.co/api/v2";
+const SPRITE = id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+const SPRITE_SHINY = id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
+const TC = {Normal:"#A8A878",Fire:"#F08030",Water:"#6890F0",Grass:"#78C850",Electric:"#F8D030",Ice:"#98D8D8",Fighting:"#C03028",Poison:"#A040A0",Ground:"#E0C068",Flying:"#A890F0",Psychic:"#F85888",Bug:"#A8B820",Rock:"#B8A038",Ghost:"#705898",Dragon:"#7038F8",Dark:"#705848",Steel:"#B8B8D0",Fairy:"#EE99AC"};
+const ALL_TYPES=Object.keys(TC);
+
+function typeEff(a,d){return(TYPE_CHART[a]||{})[d]??1;}
+
+const ITEM = n=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
+const BADGE = n=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/${n}.png`;
+const TRAINER = n=>`https://play.pokemonshowdown.com/sprites/trainers/${n}.png`;
+
+// ═══════════════════════════════════════════════
+// BATTLE MODE
+// ═══════════════════════════════════════════════
+let battleMode = localStorage.getItem("pkmnjourney_battlemode")||"easy";
+function openSettings(){ pkmnOpenSettings(); }
+function closeSettings(){ pkmnCloseSettings(); }
+
+function setBattleMode(m){
+  battleMode=m;
+  localStorage.setItem("pkmnjourney_battlemode",m);
+  renderBattleModeOpts();
+}
+
+function renderBattleModeOpts(){
+  ["easy","hard"].forEach(m=>{
+    const el=document.getElementById(`bm-${m}`);
+    const pr=document.getElementById(`bm-${m}-p`);
+    if(!el||!pr) return;
+    if(m===battleMode){el.classList.add("selected");pr.textContent="▶";}
+    else{el.classList.remove("selected");pr.textContent=" ";}
+  });
+}
+
+// ═══════════════════════════════════════════════
+// BATTLE SIMULATION
+// ═══════════════════════════════════════════════
+function bst(p){return p.hp+p.atk+p.def+p.spa+p.spd+p.spe;}
+
+// Easy mode: Pokémon-by-Pokémon BST matchups
+// Sort both sides by BST desc, match 1v1 through to 6v6, win on majority matchups
+function simulateEasy(myTeam, enemyTrainer){
+  const myQueue=[...myTeam].sort((a,b)=>(b.shiny?Math.round(bst(b)*1.1):bst(b))-(a.shiny?Math.round(bst(a)*1.1):bst(a)));
+  const enQueue=[...enemyTrainer.team].sort((a,b)=>bst(b)-bst(a));
+  let mi=0,ei=0,myWins=0,enWins=0,myFatigue=0,enFatigue=0;
+  const matchups=[];
+
+  while(mi<myQueue.length && ei<enQueue.length){
+    const mine=myQueue[mi];
+    const enemy=enQueue[ei];
+
+    // BST with shiny bonus (+10%)
+    const myB=mine.shiny?Math.round(bst(mine)*1.1):bst(mine);
+    const enB=bst(enemy);
+
+    // Stat ratio — no cap, large gaps matter
+    const statScore=myB/Math.max(enB,1);
+    // Quadratic penalty when outstatted — makes large BST gaps decisive
+    const statPenalty=myB<enB?Math.pow(myB/enB,3):1;
+
+    // Offensive: best of your types hitting their types (default neutral=1)
+    let offEff=1;
+    for(const mt of [mine.type1,mine.type2].filter(Boolean))
+      for(const et of [enemy.type1,enemy.type2].filter(Boolean))
+        offEff=Math.max(offEff,typeEff(mt,et));
+
+    // Defensive: best of their types hitting your types (default neutral=1)
+    let defEff=1;
+    for(const et of [enemy.type1,enemy.type2].filter(Boolean))
+      for(const mt of [mine.type1,mine.type2].filter(Boolean))
+        defEff=Math.max(defEff,typeEff(et,mt));
+
+    // offScore: immune=0.15, resisted=0.75, neutral=1.0, super effective=1.5, double=1.8
+    const offScore=offEff===0?.15:offEff===.5?.75:offEff===1?1:offEff===2?1.5:1.8;
+    // defPenalty: only applies when enemy hits you super effectively
+    const defPenalty=defEff<=1?0:defEff===2?.25:.5;
+    const typeScore=Math.max(0.1, offScore-defPenalty);
+
+    // Raw win probability: stats 80%, type 20%, scaled to keep range realistic
+    const raw=(statScore*.8+typeScore*.2)*.65*statPenalty;
+
+    // Fatigue: -5% per consecutive win (winner stays tired), +5% per enemy consecutive win
+    const fatigueAdj=raw-(myFatigue*0.05)+(enFatigue*0.05);
+
+    // Clamp between 2% and 96%
+    const finalWp=Math.max(.02,Math.min(.96,fatigueAdj));
+    const res=winRoll(finalWp);
+
+    matchups.push({
+      mine:mine.name, enemy:cap(enemy.name.replace(/-/g," ")),
+      mineTypes:[mine.type1,mine.type2].filter(Boolean),
+      enemyTypes:[enemy.type1,enemy.type2].filter(Boolean),
+      myBst:myB, enBst:enB,
+      typeScore:`${offScore.toFixed(2)}-${defPenalty.toFixed(2)}=${typeScore.toFixed(2)}`,
+      winPct:Math.round(finalWp*100),
+      fatigue:myFatigue>0?`-${myFatigue*5}%`:"",
+      enFatigue:enFatigue>0?`+${enFatigue*5}%`:"",
+      result:res.result, margin:res.margin
+    });
+
+    if(res.result==="win"){myWins++;myFatigue++;enFatigue=0;ei++;}
+    else{enWins++;enFatigue++;myFatigue=0;mi++;}
+  }
+  const won=ei>=enQueue.length;
+  return{result:won?"win":"loss",margin:Math.abs(myWins-enWins)>1?"decisive":"close",matchups};
+}
+
+function simulateHard(myTeam, enemyTrainer){
+  const myQueue=[...myTeam].sort((a,b)=>(b.shiny?Math.round(bst(b)*1.1):bst(b))-(a.shiny?Math.round(bst(a)*1.1):bst(a)));
+  const enQueue=[...enemyTrainer.team].sort((a,b)=>bst(b)-bst(a));
+  let mi=0,ei=0,myWins=0,enWins=0,myFatigue=0,enFatigue=0;
+  const matchups=[];
+  while(mi<myQueue.length && ei<enQueue.length){
+    const mine=myQueue[mi];
+    const enemy=enQueue[ei];
+    const myAtk=mine.shiny?Math.round(mine.atk*1.1):mine.atk;
+    const mySpA=mine.shiny?Math.round(mine.spa*1.1):mine.spa;
+    const offence=Math.max(myAtk-enemy.def, mySpA-enemy.spd);
+    // Offensive: best of your types attacking their types
+    let offEff=1;
+    for(const mt of [mine.type1,mine.type2].filter(Boolean))
+      for(const et of [enemy.type1,enemy.type2].filter(Boolean))
+        offEff=Math.max(offEff,typeEff(mt,et));
+
+    // Defensive: worst of their types attacking your types
+    let defEff=1;
+    for(const et of [enemy.type1,enemy.type2].filter(Boolean))
+      for(const mt of [mine.type1,mine.type2].filter(Boolean))
+        defEff=Math.max(defEff,typeEff(et,mt));
+
+    // Combined: offensive advantage minus defensive penalty
+    const offScore=offEff===0?.15:offEff===.5?.6:offEff===1?1:1.6;
+    const defPenalty=defEff===0?.0:defEff===.5?.0:defEff===1?.0:defEff===2?.2:0.4; // 2× = -0.2, 4× = -0.4
+    const typeScore=Math.max(0.1, offScore - defPenalty);
+    const enOffence=Math.max(enemy.atk-mine.def, enemy.spa-mine.spd, 1);
+    const durability=Math.min(mine.hp/enOffence, 3);
+    const speedBonus=mine.spe>enemy.spe?1.1:0.9;
+    const statPenalty=bst(mine)<bst(enemy)?Math.pow(bst(mine)/bst(enemy),3):1;
+    const raw=Math.max(offence,0)*typeScore*durability*speedBonus/350*statPenalty;
+    const fatigueAdj=raw-(myFatigue*0.10)+(enFatigue*0.10);
+    const finalWp=Math.max(.04,Math.min(.96,fatigueAdj));
+    const res=winRoll(finalWp);
+    matchups.push({
+      mine:mine.name, enemy:cap(enemy.name.replace(/-/g," ")),
+      mineTypes:[mine.type1,mine.type2].filter(Boolean),
+      enemyTypes:[enemy.type1,enemy.type2].filter(Boolean),
+      myBst:bst(mine), enBst:bst(enemy),
+      typeScore:`${offScore.toFixed(2)}-${defPenalty.toFixed(2)}=${typeScore.toFixed(2)}`,
+      winPct:Math.round(finalWp*100),
+      fatigue:myFatigue>0?`-${myFatigue*10}%`:"",
+      enFatigue:enFatigue>0?`+${enFatigue*10}%`:"",
+      result:res.result, margin:res.margin
+    });
+    if(res.result==="win"){myWins++;myFatigue++;enFatigue=0;ei++;}
+    else{enWins++;enFatigue++;myFatigue=0;mi++;}
+  }
+  // You win if you knocked out all their pokemon (ei reached end)
+  // They win if they knocked out all yours (mi reached end)
+  const won=ei>=enQueue.length;
+  return{result:won?"win":"loss",margin:Math.abs(myWins-enWins)>1?"decisive":"close",matchups};
+}
+
+function winRoll(raw){
+  const wp=Math.min(.96,Math.max(.06,raw));
+  const r=Math.random();
+  if(r<wp*.5)return{result:"win",margin:"decisive"};
+  if(r<wp)return{result:"win",margin:"close"};
+  if(r<wp+(1-wp)*.45)return{result:"loss",margin:"close"};
+  return{result:"loss",margin:"decisive"};
+}
+
+function simulate(myTeam, enemyTrainer){
+  return battleMode==="hard"?simulateHard(myTeam,enemyTrainer):simulateEasy(myTeam,enemyTrainer);
+}
+
+// ═══════════════════════════════════════════════
+// POKEAPI
+// ═══════════════════════════════════════════════
+const monCache={}, typeCache={};
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+function randInt(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+async function fetchData(url){const r=await fetch(url);if(r.ok)return r.json();return null;}
+
+async function fetchMon(id){
+  if(monCache[id])return monCache[id];
+  const d=await fetchData(`${BASE}/pokemon/${id}`);
+  if(!d)return null;
+  const m={
+    id:d.id,name:cap(d.name).replace(/-/g," "),
+    type1:cap(d.types[0].type.name),
+    type2:d.types[1]?cap(d.types[1].type.name):null,
+    hp:d.stats[0].base_stat, atk:d.stats[1].base_stat,
+    def:d.stats[2].base_stat, spa:d.stats[3].base_stat,
+    spd:d.stats[4].base_stat, spe:d.stats[5].base_stat,
+    baseTotal:d.stats.reduce((s,x)=>s+x.base_stat,0),
+    sprite:d.sprites.front_default||SPRITE(id),
+    spriteshiny:d.sprites.front_shiny||null,
+  };
+  monCache[id]=m;return m;
+}
+
+async function fetchTypeIds(type){
+  const k=type.toLowerCase();
+  if(typeCache[k])return typeCache[k];
+  const d=await fetchData(`${BASE}/type/${k}`);
+  if(!d)return[];
+  const ids=d.pokemon.map(p=>{const pts=p.pokemon.url.split("/");return parseInt(pts[pts.length-2]);}).filter(id=>id<=898&&id>0);
+  typeCache[k]=ids;return ids;
+}
+
+function applyShiny(mon){
+  if(Math.floor(Math.random()*128)!==0)return mon;
+  return{...mon,shiny:true,sprite:mon.spriteshiny||mon.sprite};
+}
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let S={
+  journeyMode:"gen1",teamMode:"same",draftMode:"random10",
+  team:[],pickIdx:0,rerolls:3,
+  journeyResults:[],battleLog:[],
+  unlockedAchs:[],draftModeUsed:"random10",
+};
+const getGens=()=>S.journeyMode==="gen1"?[GENS[0]]:GENS;
+
+// ═══════════════════════════════════════════════
+// SCREENS
+// ═══════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+id).classList.add("active");
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════
+function pick(el){
+  const g=el.dataset.group;
+  document.querySelectorAll(`.opt[data-group="${g}"]`).forEach(o=>{o.classList.remove("selected");o.querySelector(".opt-prefix").textContent=" ";});
+  el.classList.add("selected");el.querySelector(".opt-prefix").textContent="▶";
+  if(g==="journey"){S.journeyMode=el.dataset.val;document.getElementById("teamModeSection").style.display=S.journeyMode==="all"?"block":"none";}
+  else if(g==="team")S.teamMode=el.dataset.val;
+  else if(g==="draft")S.draftMode=el.dataset.val;
+}
+
+function goToSetup(){
+  S={journeyMode:"gen1",teamMode:"same",draftMode:"random10",team:[],pickIdx:0,rerolls:3,journeyResults:[],battleLog:[],unlockedAchs:[],draftModeUsed:"random10"};
+  document.querySelectorAll(".opt[data-group]").forEach(o=>{o.classList.remove("selected");o.querySelector(".opt-prefix").textContent=" ";});
+  document.querySelector(".opt[data-group='journey'][data-val='gen1']").classList.add("selected");document.querySelector(".opt[data-group='journey'][data-val='gen1'] .opt-prefix").textContent="▶";
+  document.querySelector(".opt[data-group='team'][data-val='same']").classList.add("selected");document.querySelector(".opt[data-group='team'][data-val='same'] .opt-prefix").textContent="▶";
+  document.querySelector(".opt[data-group='draft'][data-val='random10']").classList.add("selected");document.querySelector(".opt[data-group='draft'][data-val='random10'] .opt-prefix").textContent="▶";
+  document.getElementById("teamModeSection").style.display="none";
+  showScreen("setup");
+}
+
+// ═══════════════════════════════════════════════
+// DRAFT
+// ═══════════════════════════════════════════════
+async function goToDraft(){
+  S.draftModeUsed=S.draftMode;
+  showScreen("draft");updateDraftUI();await generatePool();
+}
+
+function updateDraftUI(){
+  const gens=getGens();
+  const isRedraft=S.journeyResults.length>0;
+  const genLabel=isRedraft?` — ${gens[S.journeyResults.length]?.name}`:"";
+  document.getElementById("draftTitle").textContent=`Draft Your Team${genLabel}`;
+  document.getElementById("draftSub").textContent=`Pick ${Math.max(0,6-S.pickIdx)} more · ${S.rerolls} reroll${S.rerolls!==1?"s":""} left`;
+  document.getElementById("rerollCount").textContent=S.rerolls;
+  document.getElementById("rerollBtn").disabled=S.rerolls<=0;
+  document.getElementById("pickStatus").textContent=`Pick ${S.pickIdx+1} of 6`;
+  renderTeamBar("teamBar",S.team);
+  const done=S.pickIdx>=6;
+  document.getElementById("teamDoneSection").style.display=done?"block":"none";
+  document.getElementById("rerollBtn").style.display=done?"none":"inline-block";
+  document.getElementById("pickStatus").style.display=done?"none":"block";
+}
+
+function renderTeamBar(elId,team){
+  const bar=document.getElementById(elId);bar.innerHTML="";
+  for(let i=0;i<6;i++){
+    const p=team[i];
+    const slot=document.createElement("div");
+    slot.className="team-slot"+(p?" filled":"");
+    if(p)slot.innerHTML=`<img src="${p.sprite}" alt="${p.name}" onerror="this.src='${SPRITE(p.id)}'"/><div class="slot-name">${p.shiny?"✨":""}${p.name}</div>`;
+    else slot.innerHTML=`<div class="slot-empty">?</div>`;
+    bar.appendChild(slot);
+  }
+}
+
+function showPoolState(state){
+  ["poolLoading","poolError","poolEmpty","poolGrid"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("rolledBanner").style.display="none";
+  if(state)document.getElementById(state).style.display=state==="poolGrid"?"grid":"block";
+}
+
+async function generatePool(){
+  showPoolState("poolLoading");
+  const usedIds=new Set(S.team.map(p=>p.id));
+  try{
+    let mons=[];
+    if(S.draftMode==="random10"){
+      let ids=[];
+      if(S.journeyMode==="gen1"){
+        const all=Array.from({length:151},(_,i)=>i+1).filter(i=>!usedIds.has(i));
+        ids=shuffle(all).slice(0,10);
+      } else {
+        for(const g of GENS){
+          const all=Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0]).filter(i=>!usedIds.has(i));
+          if(all.length)ids.push(all[randInt(0,all.length-1)]);
+        }
+      }
+      mons=(await Promise.all(ids.map(fetchMon))).filter(Boolean);
+    } else {
+      const availGens=getGens();
+      const g=availGens[randInt(0,availGens.length-1)];
+      const type=ALL_TYPES[randInt(0,ALL_TYPES.length-1)];
+      const banner=document.getElementById("rolledBanner");
+      banner.style.display="flex";
+      banner.innerHTML=`<span>🎰 Rolled:</span><strong>Gen ${g.id} — ${g.name}</strong><span class="tag" style="background:${TC[type]||'#888'};padding:2px 8px;">${type}</span>`;
+      const allTypeIds=await fetchTypeIds(type);
+      const inGen=allTypeIds.filter(id=>id>=g.range[0]&&id<=g.range[1]&&!usedIds.has(id));
+      banner.innerHTML+=`<span style="color:var(--mid);font-size:10px;">(${inGen.length} found)</span>`;
+      mons=(await Promise.all(inGen.map(fetchMon))).filter(Boolean);
+    }
+    mons=mons.map(applyShiny);
+    if(mons.length===0){showPoolState("poolEmpty");return;}
+    renderPool(mons);showPoolState("poolGrid");
+  } catch(e){showPoolState("poolError");}
+}
+
+function renderStatBars(p){
+  const stats=[
+    {label:"HP", val:p.hp},
+    {label:"ATK",val:p.atk},
+    {label:"DEF",val:p.def},
+    {label:"SpA",val:p.spa},
+    {label:"SpD",val:p.spd},
+    {label:"SPE",val:p.spe},
+  ];
+  const max=255;
+  return `<div class="stat-bar-wrap">${stats.map(s=>`
+    <div class="stat-row">
+      <div class="stat-row-label">${s.label}</div>
+      <div class="stat-row-bar"><div class="stat-row-fill" style="width:${Math.round((s.val/max)*100)}%"></div></div>
+      <div style="font-size:7px;color:var(--light);width:18px;text-align:right;">${s.val}</div>
+    </div>`).join("")}</div>`;
+}
+
+function renderPool(mons){
+  const grid=document.getElementById("poolGrid");grid.innerHTML="";
+  mons.forEach(p=>{
+    const c=document.createElement("div");
+    c.className="mon-card"+(p.shiny?" shiny":"");
+    c.innerHTML=`
+      <img src="${p.sprite}" alt="${p.name}" onerror="this.src='${SPRITE(p.id)}'"/>
+      <div class="mon-name">${p.shiny?"✨ ":""}#${p.id} ${p.name}</div>
+      <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">
+        <span class="tag" style="background:${TC[p.type1]||'#888'}">${p.type1}</span>
+        ${p.type2?`<span class="tag" style="background:${TC[p.type2]||'#888'}">${p.type2}</span>`:""}
+        ${p.shiny?`<span class="tag" style="background:#c0a020">✨ Shiny</span>`:""}
+      </div>
+      <div class="mon-bst">BST ${p.baseTotal}${p.shiny?" (+10%)":""}</div>
+      ${battleMode==="hard"?renderStatBars(p):""}`;
+    c.onclick=()=>pickMon(p);
+    grid.appendChild(c);
+  });
+}
+
+async function pickMon(mon){
+  if(S.pickIdx>=6)return;
+  S.team.push(mon);S.pickIdx++;
+  saveCaught(mon);updateDraftUI();
+  if(S.pickIdx<6)await generatePool();
+}
+
+function saveCaught(mon){
+  try{
+    const raw=localStorage.getItem("pkmnjourney_pokedex");
+    const dex=raw?JSON.parse(raw):{};
+    if(!dex[mon.id])dex[mon.id]={id:mon.id,name:mon.name,type1:mon.type1,type2:mon.type2,baseTotal:mon.baseTotal,sprite:mon.shiny?(mon.spriteshiny||mon.sprite):mon.sprite,shiny:mon.shiny||false,caughtAt:Date.now()};
+    localStorage.setItem("pkmnjourney_pokedex",JSON.stringify(dex));
+  }catch(e){}
+}
+
+async function doReroll(){
+  if(S.rerolls<=0)return;S.rerolls--;updateDraftUI();await generatePool();
+}
+
+// ═══════════════════════════════════════════════
+// JOURNEY
+// ═══════════════════════════════════════════════
+async function startJourney(){
+  showScreen("journey");
+  renderTeamBar("journeyTeamBar",S.team);
+  document.getElementById("battleLog").innerHTML="";
+  document.getElementById("genPills").innerHTML="";
+  document.getElementById("resultsBtn").style.display="none";
+  document.getElementById("nextRegionBtn").style.display="none";
+  document.getElementById("simStatus").style.display="block";
+  await runGens(S.journeyResults.length);
+}
+
+async function runGens(startIdx){
+  const gens=getGens();
+  for(let gi=startIdx;gi<gens.length;gi++){
+    const gen=gens[gi];
+    const enemyData=ENEMY_DATA[gen.enemyKey];
+    const genRes={gen,battles:[],wins:0,losses:0};
+
+    // Pick champion randomly if multiple
+    const champion=enemyData.champions[randInt(0,enemyData.champions.length-1)];
+    const battles=[
+      ...enemyData.gyms.map(t=>({...t,stage:"gym"})),
+      ...enemyData.elite4.map(t=>({...t,stage:"elite4"})),
+      {...champion,stage:"champion"},
+    ];
+
+    for(const b of battles){
+      await new Promise(r=>setTimeout(r,80));
+      const res=simulate(S.team,b);
+      const entry={...b,...res,genName:gen.name};
+      genRes.battles.push(entry);
+      if(res.result==="win")genRes.wins++;else genRes.losses++;
+      S.battleLog.push(entry);
+      appendBattleRow(entry);
+      document.getElementById("battleLog").scrollTop=99999;
+    }
+
+    S.journeyResults.push(genRes);
+    updateGenPills();updateTotalScore();
+    checkAchievements();
+
+    if(gi<gens.length-1){
+      document.getElementById("simStatus").style.display="none";
+      document.getElementById("nextRegionBtn").style.display="inline-block";
+      document.getElementById("nextRegionLabel").textContent=`▶ Continue to ${gens[gi+1].name}`;
+      await new Promise(r=>{window._continueJourney=r;});
+      document.getElementById("nextRegionBtn").style.display="none";
+      document.getElementById("simStatus").style.display="block";
+      if(S.teamMode==="redraft"){
+        S.pickIdx=0;S.team=[];S.rerolls=3;
+        await goToDraft();return;
+      }
+    }
+  }
+  document.getElementById("simStatus").style.display="none";
+  document.getElementById("resultsBtn").style.display="inline-block";
+  checkAchievements();
+}
+
+function appendBattleRow(b){
+  const log=document.getElementById("battleLog");
+  const win=b.result==="win";
+
+  let spriteHtml="";
+  if(b.stage==="gym"){
+    const badgeName=GYM_BADGES[b.name];
+    if(badgeName) spriteHtml=`<img src="${BADGE(badgeName)}" style="width:20px;height:20px;image-rendering:pixelated;opacity:${win?1:0.3};filter:${win?"none":"grayscale(1)"};" onerror="this.style.display='none'"/>`;
+    else spriteHtml=`<span style="font-size:14px;">${win?"🏅":"⭕"}</span>`;
+  } else {
+    const trainerKey=TRAINER_SPRITES[b.name];
+    if(trainerKey) spriteHtml=`<img src="${TRAINER(trainerKey)}" style="width:24px;height:24px;object-fit:contain;image-rendering:pixelated;opacity:${win?1:0.3};filter:${win?"none":"grayscale(1)"};" onerror="this.style.display='none'"/>`;
+    else spriteHtml=`<span style="font-size:12px;">${b.stage==="champion"?"👑":"⚔️"}</span>`;
+  }
+
+  const row=document.createElement("div");
+  row.className="battle-row";
+  row.innerHTML=`
+    <span class="b-icon" style="width:20px;">${spriteHtml}</span>
+    <span class="b-result" style="color:${win?"var(--win,#4caf50)":"var(--loss,#ef4444)"}">${win?"✔":"✗"}</span>
+    <span class="b-name">${b.name}</span>
+    <span class="b-type" style="color:${TC[b.type]||"#fff"}">${b.type}</span>
+    <span class="b-verdict" style="color:${win?"var(--win,#4caf50)":"var(--loss,#ef4444)"}">${win?"Win":"Loss"}</span>
+    <span style="font-size:9px;color:var(--light);margin-left:4px;">▼</span>`;
+
+  const detail=document.createElement("div");
+  detail.className="battle-detail";
+
+  if(b.matchups&&b.matchups.length){
+    const wCount=b.matchups.filter(m=>m.result==="win").length;
+    const lCount=b.matchups.filter(m=>m.result==="loss").length;
+    let html=`<div style="margin-bottom:4px;color:var(--text);">Matchup breakdown (${wCount}W / ${lCount}L):</div><div class="battle-detail-grid">`;
+    b.matchups.forEach(m=>{
+      html+=`<div class="battle-matchup">
+        <span class="bm-mine">${m.mine}${m.mineTypes?` <span style="font-size:7px;opacity:0.7;">(${m.mineTypes.join("/")})</span>`:""}</span>
+        <span style="font-size:8px;color:var(--light);">vs</span>
+        <span class="bm-enemy">${m.enemy}${m.enemyTypes?` <span style="font-size:7px;opacity:0.7;">(${m.enemyTypes.join("/")})</span>`:""}</span>
+        <span class="bm-result ${m.result==="win"?"bm-win":"bm-loss"}">${m.result==="win"?"✔ Win":"✗ Loss"} (${m.margin})</span>
+        <span style="font-size:7px;color:var(--light);">BST: ${m.myBst} vs ${m.enBst}</span>
+        ${m.typeScore?`<span style="font-size:7px;color:var(--light);">Type eff: ×${m.typeScore}</span>`:""}
+        <span style="font-size:8px;font-weight:bold;color:${m.winPct>=60?"var(--win,#4caf50)":m.winPct>=40?"var(--light)":"var(--loss,#ef4444)"};">Win chance: ${m.winPct}%</span>
+        ${m.fatigue?`<span style="font-size:7px;color:var(--loss,#ef4444);white-space:nowrap;">You: ${m.fatigue}</span>`:""}
+        ${m.enFatigue?`<span style="font-size:7px;color:var(--win,#4caf50);white-space:nowrap;">Enemy: ${m.enFatigue}</span>`:""}
+      </div>`;
+    });
+    html+=`</div>`;
+    detail.innerHTML=html;
+  } else {
+    detail.innerHTML=`<div style="color:var(--light);">No matchup data.</div>`;
+  }
+
+  row.onclick=()=>{
+    detail.classList.toggle("open");
+    row.querySelector("span:last-child").textContent=detail.classList.contains("open")?"▲":"▼";
+  };
+  log.appendChild(row);
+  log.appendChild(detail);
+}
+
+function updateGenPills(){
+  const pills=document.getElementById("genPills");pills.innerHTML="";
+  getGens().forEach((g,i)=>{
+    const r=S.journeyResults[i];
+    const pill=document.createElement("div");pill.className="gen-pill";
+    pill.style.background=r?(r.wins>=r.losses?"var(--dark)":"var(--mid)"):"var(--card)";
+    pill.style.color=r?"var(--bg)":"var(--mid)";
+    pill.textContent=`Gen${g.id}${r?` ${r.wins}W/${r.losses}L`:""}`;
+    pills.appendChild(pill);
+  });
+}
+
+function updateTotalScore(){
+  const w=S.journeyResults.reduce((s,g)=>s+g.wins,0);
+  const l=S.journeyResults.reduce((s,g)=>s+g.losses,0);
+  document.getElementById("totalScore").innerHTML=`Total: <span style="color:#4caf50">${w}W</span> / <span style="color:#ef5350">${l}L</span>`;
+}
+
+// ═══════════════════════════════════════════════
+// ACHIEVEMENTS
+// ═══════════════════════════════════════════════
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(ach=>{
+    if(S.unlockedAchs.find(a=>a.id===ach.id))return;
+    try{if(ach.check(S.team,S.journeyResults,S.draftModeUsed)){S.unlockedAchs.push(ach);showToast(ach);saveAchToProfile(ach);}}catch(e){}
+  });
+}
+
+function showToast(ach){
+  const c=document.getElementById("toast-container");
+  const t=document.createElement("div");t.className="toast";
+  t.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;">
+      <img src="${ITEM(ach.item)}" style="width:24px;height:24px;image-rendering:pixelated;" onerror="this.style.display='none'"/>
+      <div><div class="toast-title">${ach.name}</div><div class="toast-desc">${ach.desc}</div></div>
+    </div>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .5s";setTimeout(()=>t.remove(),500);},4000);
+}
+
+function saveAchToProfile(ach){
+  try{
+    const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
+    if(!p)return;
+    if(!p.achievements)p.achievements=[];
+    if(!p.achievements.find(a=>a.id===ach.id))p.achievements.push({id:ach.id,date:Date.now()});
+    localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+// RESULTS
+// ═══════════════════════════════════════════════
+function goToResults(){
+  showScreen("results");
+  const w=S.journeyResults.reduce((s,g)=>s+g.wins,0);
+  const l=S.journeyResults.reduce((s,g)=>s+g.losses,0);
+  const total=w+l;const pct=total>0?Math.round((w/total)*100):0;
+  const rank=pct>=90?"CHAMPION":pct>=70?"ELITE TRAINER":pct>=50?"GYM CHALLENGER":"ROOKIE";
+  const medal=pct>=90?"🏆":pct>=70?"🥈":pct>=50?"🎖":"📜";
+  document.getElementById("resultMedal").textContent=medal;
+  document.getElementById("resultRank").textContent=rank;
+  renderTeamBar("resultsTeamBar",S.team);
+  document.getElementById("statGrid").innerHTML=[["Battles",total,"var(--bg)"],["Wins",w,"#4caf50"],["Losses",l,"#ef5350"],["Win %",pct+"%","var(--bg)"]].map(([l,v,c])=>`<div><div class="stat-val" style="color:${c}">${v}</div><div class="stat-lbl">${l}</div></div>`).join("");
+  // Gen breakdown with badges + trainer sprites
+  const bd=document.getElementById("genBreakdown");bd.innerHTML="";
+  S.journeyResults.forEach(r=>{
+    const gp=Math.round((r.wins/(r.wins+r.losses))*100);const won=r.wins>=r.losses;
+    const section=document.createElement("div");
+    section.style.cssText="margin-bottom:14px;";
+
+    // Region header
+    const header=document.createElement("div");
+    header.className="gen-result-row";
+    header.innerHTML=`
+      <span>${won?"✅":"❌"}</span>
+      <span style="flex:1;font-weight:bold;">Gen ${r.gen.id}: ${r.gen.name}</span>
+      <span style="color:var(--mid);font-size:9px;">${r.gen.game}</span>
+      <span style="color:${won?"#4caf50":"#ef5350"};font-weight:bold;">${r.wins}W/${r.losses}L (${gp}%)</span>`;
+    section.appendChild(header);
+
+    // Gym badges row
+    const gyms=r.battles.filter(b=>b.stage==="gym");
+    if(gyms.length){
+      const badgeRow=document.createElement("div");
+      badgeRow.style.cssText="display:flex;gap:4px;flex-wrap:wrap;padding:6px 0 6px 20px;";
+      gyms.forEach(b=>{
+        const badgeName=GYM_BADGES[b.name];
+        const wrap=document.createElement("div");
+        wrap.title=`${b.name} — ${b.result==="win"?"Won":"Lost"}`;
+        wrap.style.cssText=`opacity:${b.result==="win"?1:0.25};filter:${b.result==="win"?"none":"grayscale(1)"};`;
+        if(badgeName)
+          spriteHtml=`<img src="${BADGE(badgeName)}" style="width:20px;height:20px;image-rendering:pixelated;opacity:${win?1:0.3};filter:${win?"none":"grayscale(1)"};" onerror="this.style.display='none'"/>`;
+        else spriteHtml=`<span style="font-size:14px;">${win?"🏅":"⭕"}</span>`;
+        badgeRow.appendChild(wrap);
+      });
+      section.appendChild(badgeRow);
+    }
+
+    // Elite Four + Champion trainer sprites
+    const e4andChamp=r.battles.filter(b=>b.stage==="elite4"||b.stage==="champion");
+    if(e4andChamp.length){
+      const trainerRow=document.createElement("div");
+      trainerRow.style.cssText="display:flex;gap:6px;flex-wrap:wrap;padding:4px 0 4px 20px;align-items:flex-end;";
+      e4andChamp.forEach(b=>{
+        const trainerKey=TRAINER_SPRITES[b.name];
+        const wrap=document.createElement("div");
+        wrap.title=`${b.name} (${b.type}) — ${b.result==="win"?"Won":"Lost"}`;
+        wrap.style.cssText=`display:flex;flex-direction:column;align-items:center;opacity:${b.result==="win"?1:0.35};filter:${b.result==="win"?"none":"grayscale(1)"};`;
+        const trainerUrl=trainerKey?TRAINER(trainerKey):null;
+        wrap.innerHTML=`
+          ${trainerUrl?`<img src="${trainerUrl}" style="width:40px;height:40px;image-rendering:pixelated;object-fit:contain;" onerror="this.style.display='none'"/>`:`<div style="width:40px;height:40px;background:var(--mid);display:flex;align-items:center;justify-content:center;font-size:16px;">${b.stage==="champion"?"👑":"⚔️"}</div>`}
+          <div style="font-size:7px;color:var(--mid);text-align:center;max-width:40px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.name.split(" ")[0]}</div>`;
+        trainerRow.appendChild(wrap);
+      });
+      section.appendChild(trainerRow);
+    }
+
+    bd.appendChild(section);
+  });
+
+  // Achievements with item sprites
+  if(S.unlockedAchs.length>0){
+    document.getElementById("achSection").style.display="block";
+    document.getElementById("achList").innerHTML=S.unlockedAchs.map(a=>`
+      <div class="ach-badge">
+        <img src="${ITEM(a.item)}" style="width:20px;height:20px;image-rendering:pixelated;" onerror="this.style.display='none'"/>
+        ${a.name}
+      </div>`).join("");
+  }
+  try{
+    const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
+    if(p){p.runs=(p.runs||0)+1;if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));}
+  }catch(e){}
+  document.getElementById("sharePreview").style.display="none";
+  document.getElementById("downloadBtn").style.display="none";
+}
+
+// ═══════════════════════════════════════════════
+// SHARE CARD
+// ═══════════════════════════════════════════════
+async function generateShareCard(){
+  const canvas=document.getElementById("shareCanvas");
+  const W=600,H=340;canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext("2d");
+  // Pull current theme colours from CSS variables
+  const cs=getComputedStyle(document.documentElement);
+  const cDark=cs.getPropertyValue("--dark").trim()||"#0f380f";
+  const cBg=cs.getPropertyValue("--bg").trim()||"#9bbc0f";
+  const cMid=cs.getPropertyValue("--mid").trim()||"#306230";
+  const cLight=cs.getPropertyValue("--light").trim()||"#8bac0f";
+  ctx.fillStyle=cDark;ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=cBg;ctx.lineWidth=4;ctx.strokeRect(4,4,W-8,H-8);
+  ctx.fillStyle=cBg;ctx.font="bold 20px 'Courier New'";ctx.textAlign="center";
+  ctx.fillText("PKMNJOURNEY.COM",W/2,32);
+  const w=S.journeyResults.reduce((s,g)=>s+g.wins,0);
+  const l=S.journeyResults.reduce((s,g)=>s+g.losses,0);
+  const pct=w+l>0?Math.round((w/(w+l))*100):0;
+  const rank=pct>=90?"🏆 CHAMPION":pct>=70?"🥈 ELITE TRAINER":pct>=50?"🎖 GYM CHALLENGER":"📜 ROOKIE";
+  ctx.font="bold 14px 'Courier New'";ctx.fillStyle=cLight;ctx.fillText(rank,W/2,54);
+  ctx.font="11px 'Courier New'";ctx.fillStyle=cBg;
+  ctx.fillText(`${w}W / ${l}L · ${pct}% win rate · ${S.journeyResults.length} region${S.journeyResults.length!==1?"s":""}`,W/2,72);
+  const ssz=60,totalW=S.team.length*ssz+(S.team.length-1)*6,startX=(W-totalW)/2,sY=88;
+  for(let i=0;i<S.team.length;i++){
+    const p=S.team[i];const x=startX+i*(ssz+6);
+    ctx.fillStyle=cMid;ctx.fillRect(x,sY,ssz,ssz+16);
+    try{await new Promise((res,rej)=>{const img=new Image();img.crossOrigin="anonymous";img.onload=()=>{ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x,sY,ssz,ssz);res();};img.onerror=rej;img.src=p.sprite;setTimeout(rej,3000);});}catch(e){}
+    ctx.fillStyle=p.shiny?"#f0d060":cBg;ctx.font="8px 'Courier New'";ctx.textAlign="center";
+    ctx.fillText((p.shiny?"✨":"")+p.name.slice(0,9),x+ssz/2,sY+ssz+12);
+  }
+  if(S.unlockedAchs.length>0){
+    ctx.font="10px 'Courier New'";ctx.textAlign="left";ctx.fillStyle=cLight;
+    ctx.fillText(S.unlockedAchs.map(a=>`${a.icon}${a.name}`).join("  ").slice(0,72),14,sY+ssz+34);
+  }
+  ctx.font="9px 'Courier New'";ctx.textAlign="center";ctx.fillStyle=cMid;
+  ctx.fillText(S.journeyResults.map(r=>`Gen${r.gen.id}:${r.wins}W/${r.losses}L`).join("  "),W/2,H-22);
+  ctx.fillText("Fan-made · Not affiliated with Nintendo or The Pokémon Company",W/2,H-8);
+  const dataUrl=canvas.toDataURL("image/png");
+  document.getElementById("sharePreview").src=dataUrl;document.getElementById("sharePreview").style.display="block";
+  document.getElementById("downloadBtn").style.display="inline-block";
+}
+
+function downloadCard(){
+  const a=document.createElement("a");a.download="pkmnjourney-run.png";a.href=document.getElementById("shareCanvas").toDataURL("image/png");a.click();
+}
+
+// Init
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderBattleModeOpts();
+  pkmnInjectNav("game");
+});
+</script>
+</body>
+</html>

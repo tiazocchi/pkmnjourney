@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PkmnJourney — Trainer Profile</title>
+<meta name="description" content="Your PkmnJourney trainer profile — stats, achievements and settings."/>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+main{flex:1;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+
+/* Profile hero */
+.profile-hero{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.profile-sprite{image-rendering:pixelated;width:80px;height:80px;}
+.profile-info{flex:1;min-width:160px;}
+.profile-name{font-size:22px;font-weight:bold;color:var(--text);text-transform:uppercase;letter-spacing:2px;}
+.profile-starter,.profile-joined{font-size:10px;color:var(--light);margin-top:2px;}
+
+/* Stat boxes */
+.stat-grid-profile{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;}
+.stat-box{background:var(--dark);color:var(--bg);padding:12px 8px;text-align:center;border:2px solid var(--border);}
+.stat-val{font-size:24px;font-weight:bold;color:var(--text-on-dark);}
+.stat-lbl{font-size:8px;letter-spacing:1px;margin-top:2px;color:var(--accent);}
+
+/* Achievements */
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;}
+.ach-card{background:var(--card);border:2px solid var(--border);padding:10px 12px;display:flex;align-items:flex-start;gap:10px;}
+.ach-card.locked{opacity:.3;filter:grayscale(1);}
+.ach-card.unlocked{background:var(--dark);border-color:var(--accent);}
+.ach-card.unlocked .ach-name{color:var(--text-on-dark);}
+.ach-card.unlocked .ach-desc,.ach-card.unlocked .ach-date{color:var(--accent);}
+.ach-item{width:32px;height:32px;image-rendering:pixelated;flex-shrink:0;}
+.ach-name{font-size:11px;font-weight:bold;color:var(--text);}
+.ach-desc{font-size:9px;color:var(--light);margin-top:2px;line-height:1.4;}
+.ach-date{font-size:8px;color:var(--light);margin-top:4px;}
+
+/* Theme picker */
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;}
+.theme-card{border:3px solid var(--border);padding:12px 8px;cursor:pointer;text-align:center;transition:all .1s;position:relative;}
+.theme-card:hover{border-color:var(--dark);}
+.theme-card.selected{border-color:var(--accent);background:var(--dark);}
+.theme-card.selected .theme-label{color:var(--text-on-dark);}
+.theme-swatches{display:flex;gap:3px;justify-content:center;margin-bottom:8px;}
+.theme-swatch{width:18px;height:18px;border-radius:3px;border:1px solid rgba(0,0,0,.2);}
+.theme-label{font-size:10px;font-weight:bold;color:var(--text);text-transform:uppercase;letter-spacing:1px;}
+.theme-font{font-size:9px;color:var(--light);margin-top:2px;}
+.theme-card.selected .theme-font{color:var(--light);}
+.selected-tick{position:absolute;top:4px;right:6px;font-size:12px;}
+
+/* Battle mode */
+.mode-card{border:2px solid var(--border);padding:14px;margin-bottom:8px;cursor:pointer;transition:all .1s;background:var(--card);}
+.mode-card:hover{border-color:var(--accent);}
+.mode-card.selected{background:var(--dark);border-color:var(--accent);}
+.mode-card.selected .mode-title{color:var(--text-on-dark);}
+.mode-card.selected .mode-tag{color:var(--accent);}
+.mode-card.selected .mode-desc,.mode-card.selected .mode-bullet{color:var(--text-on-dark);opacity:0.75;}
+.mode-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.mode-title{font-size:13px;font-weight:bold;color:var(--text,var(--dark));text-transform:uppercase;letter-spacing:1px;}
+.mode-tag{font-size:9px;color:var(--mid);background:var(--border);color:var(--bg);padding:2px 6px;border-radius:2px;}
+.mode-card.selected .mode-tag{background:var(--dark);}
+.mode-desc{font-size:10px;color:var(--text,var(--mid));opacity:0.75;line-height:1.6;margin-bottom:8px;}
+.mode-bullets{display:flex;flex-direction:column;gap:3px;}
+.mode-bullet{font-size:9px;color:var(--text,var(--mid));opacity:0.75;display:flex;gap:6px;align-items:flex-start;}
+.mode-bullet-icon{flex-shrink:0;width:14px;}
+.mode-prefix{margin-right:4px;}
+
+.starters{display:flex;gap:8px;justify-content:center;margin-top:4px;}
+.starter-option{display:none;}
+.starter-label{border:3px solid var(--border);background:var(--muted);padding:8px 6px;cursor:pointer;text-align:center;flex:1;transition:all .1s;}
+.starter-label:hover{border-color:var(--accent);}
+.starter-option:checked+.starter-label{border-color:var(--accent);background:var(--dark);}
+.starter-option:checked+.starter-label .starter-name{color:var(--text-on-dark);}
+.starter-img{width:52px;height:52px;image-rendering:pixelated;display:block;margin:0 auto 4px;}
+.starter-name{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text);display:block;}
+
+/* No profile */
+.no-profile{text-align:center;padding:40px 20px;}
+.no-profile .big{font-size:48px;margin-bottom:12px;}
+.no-profile h2{font-size:16px;text-transform:uppercase;letter-spacing:2px;color:var(--text-on-dark);margin-bottom:6px;}
+.no-profile p{font-size:11px;color:var(--accent);margin-bottom:20px;line-height:1.6;}
+
+@media(max-width:500px){
+  .ach-grid{grid-template-columns:1fr;}
+  .theme-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="ad-banner">
+  <div class="ad-slot">[ Advertisement — 728×90 ]</div>
+</div>
+
+<nav></nav>
+<main id="main"></main>
+
+<footer>
+  <div>PkmnJourney is a fan-made project, not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company.</div>
+  <div style="margin-top:4px;">Pokémon and all related names are trademarks of their respective owners.</div>
+  <div style="margin-top:8px;"><a href="#">Privacy Policy</a> · <a href="#">Contact</a></div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+const ITEM_URL = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
+
+const ACHIEVEMENTS = [
+  {id:"lord_skies",   item:"sharp-beak",      name:"Lord of the Skies",    desc:"Complete a run with a full Flying-type team"},
+  {id:"eternal_flame",item:"fire-stone",       name:"Eternal Flame",        desc:"Complete a run with a full Fire-type team"},
+  {id:"tide_turner",  item:"water-stone",      name:"Tide Turner",          desc:"Complete a run with a full Water-type team"},
+  {id:"shadow_realm", item:"spell-tag",        name:"Shadow Realm",         desc:"Complete a run with a full Ghost-type team"},
+  {id:"thunder_god",  item:"thunder-stone",    name:"Thunder God",          desc:"Complete a run with a full Electric-type team"},
+  {id:"frozen_throne",item:"never-melt-ice",   name:"Frozen Throne",        desc:"Complete a run with a full Ice-type team"},
+  {id:"dragon_master",item:"dragon-scale",     name:"Dragon Master",        desc:"Complete a run with a full Dragon-type team"},
+  {id:"engineered",   item:"master-ball",      name:"Perfectly Engineered", desc:"Win with an average BST over 500"},
+  {id:"flawless",     item:"gold-bottle-cap",  name:"Flawless Champion",    desc:"Zero losses across the entire run"},
+  {id:"rock_solid",   item:"hard-stone",       name:"Rock Solid",           desc:"Complete a run despite 5+ losses"},
+  {id:"dark_horse",   item:"dusk-stone",       name:"Dark Horse",           desc:"Win a region with avg BST under 380"},
+  {id:"world_tour",   item:"exp-share",        name:"World Traveller",      desc:"Complete all 8 regions"},
+  {id:"fates_champ",  item:"destiny-knot",     name:"Fate's Champion",      desc:"Complete a full run using only Type Roll draft"},
+];
+
+const THEMES = {
+  "Articuno": { desc:"Ice blue", preview:["#fcfcfd","#6aacf6","#005273"] },
+  "Zapdos":   { desc:"Electric gold", preview:["#fdfdfc","#ffd541","#d5ac08"] },
+  "Moltres":  { desc:"Fire orange", preview:["#fdfcfc","#ee6239","#d50808"] },
+};
+
+
+
+const BATTLE_MODES = [
+  {
+    id:"easy",
+    label:"Easy",
+    tag:"Recommended",
+    desc:"Each of your Pokémon battles its best matchup from the enemy team. Win probability is based on Base Stat Total (BST) and type effectiveness. Simple and fast.",
+    bullets:[
+      {icon:"⚔️", text:"Your 6 Pokémon fight enemy Pokémon one by one"},
+      {icon:"📊", text:"Win chance = your BST vs enemy BST + type advantage"},
+      {icon:"🎯", text:"Best type matchup from your team is chosen automatically"},
+      {icon:"💪", text:"Having 6 vs 2 Pokémon gives you a big numerical advantage"},
+      {icon:"✅", text:"Great for learning the game and casual runs"},
+    ]
+  },
+  {
+    id:"hard",
+    label:"Hard",
+    tag:"Advanced",
+    desc:"A full Pokémon-by-Pokémon simulation. Each matchup uses individual stats: Attack vs Defense, Sp.Atk vs Sp.Def, Speed decides who strikes first, and HP determines durability.",
+    bullets:[
+      {icon:"⚔️", text:"Your 6 Pokémon fight enemy Pokémon one by one"},
+      {icon:"📊", text:"Win chance = Attack vs Defense OR Sp.Atk vs Sp.Def (best channel)"},
+      {icon:"⚡", text:"Speed: faster Pokémon gets a strike-first bonus (+10%)"},
+      {icon:"❤️", text:"HP durability: how many hits you survive affects outcome"},
+      {icon:"🧠", text:"Team composition and individual stats really matter"},
+      {icon:"🎯", text:"A glass cannon can lose to a defensive wall even with type advantage"},
+    ]
+  },
+];
+
+function getBattleMode(){
+  return localStorage.getItem("pkmnjourney_battlemode")||"easy";
+}
+function setBattleMode(m){
+  localStorage.setItem("pkmnjourney_battlemode",m);
+  renderBattleModeSection();
+}
+
+function formatDate(ts){
+  if(!ts)return"";
+  return new Date(ts).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+}
+
+function deleteProfile(){
+  if(!confirm("Delete your trainer profile? All progress will be lost."))return;
+  localStorage.removeItem("pkmnjourney_profile");
+  localStorage.removeItem("pkmnjourney_pokedex");
+  localStorage.removeItem("pkmnjourney_battlemode");
+  pkmnUpdateNav();
+  render();
+}
+
+function escHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Theme section ──────────────────────────────────────
+function renderThemeSection() {
+  const cur = pkmnGetPalette();
+  const isDark = pkmnGetDarkMode();
+  const container = document.getElementById("themeGrid");
+  if (!container) return;
+  container.innerHTML = "";
+  Object.entries(THEMES).forEach(([k, t]) => {
+    const p = PKMN_PALETTES[k].light;
+    const card = document.createElement("div");
+    card.className = "theme-card" + (k === cur ? " selected" : "");
+    card.innerHTML = `
+      ${k === cur ? '<div class="selected-tick">✔</div>' : ""}
+      <div class="theme-swatches">
+        ${t.preview.map(c => `<div class="theme-swatch" style="background:${c}"></div>`).join("")}
+      </div>
+      <div class="theme-label">${k}</div>
+      <div class="theme-font">${t.desc}</div>`;
+    card.onclick = () => { pkmnApplyPalette(k, isDark); renderThemeSection(); };
+    container.appendChild(card);
+  });
+  // Dark toggle
+  const toggle = document.createElement("div");
+  toggle.style.cssText = "grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:2px solid var(--border);margin-top:4px;";
+  toggle.innerHTML = `
+    <span style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:var(--text);">Dark Mode</span>
+    <button onclick="pkmnToggleDark()" style="font-family:var(--font);font-size:11px;font-weight:bold;padding:4px 14px;border:2px solid var(--border);background:var(--dark);color:var(--text-on-dark);cursor:pointer;text-transform:uppercase;letter-spacing:1px;">${isDark ? "☀ Light" : "☾ Dark"}</button>`;
+  container.appendChild(toggle);
+}
+
+// ── Battle mode section ────────────────────────────────
+function renderBattleModeSection(){
+  const cur=getBattleMode();
+  const container=document.getElementById("battleModeSection");
+  if(!container)return;
+  container.innerHTML="";
+  BATTLE_MODES.forEach(m=>{
+    const card=document.createElement("div");
+    card.className="mode-card"+(m.id===cur?" selected":"");
+    card.innerHTML=`
+      <div class="mode-header">
+        <span class="mode-prefix">${m.id===cur?"▶":" "}</span>
+        <span class="mode-title">${m.label}</span>
+        <span class="mode-tag">${m.tag}</span>
+      </div>
+      <div class="mode-desc">${m.desc}</div>
+      <div class="mode-bullets">
+        ${m.bullets.map(b=>`
+          <div class="mode-bullet">
+            <span class="mode-bullet-icon">${b.icon}</span>
+            <span>${b.text}</span>
+          </div>`).join("")}
+      </div>`;
+    card.onclick=()=>setBattleMode(m.id);
+    container.appendChild(card);
+  });
+}
+
+function saveProfile(){
+  const name=document.getElementById("usernameInput").value.trim();
+  const errEl=document.getElementById("usernameError");
+  if(!name){errEl.style.display="block";return;}
+  errEl.style.display="none";
+  const starter=document.querySelector('input[name="starter"]:checked').value;
+  const profile={name,starter,runs:0,bestWinPct:null,achievements:[],created:Date.now()};
+  localStorage.setItem("pkmnjourney_profile",JSON.stringify(profile));
+  pkmnUpdateNav();
+  render();
+}
+
+// ── Main render ────────────────────────────────────────
+function render(){
+  const main=document.getElementById("main");
+  const p=pkmnGetProfile();
+
+  if(!p){
+    main.innerHTML=`
+      <div class="card">
+        <div class="card-title">Create Trainer</div>
+        <div class="card-sub">Saved locally on your device. Tracks your stats and achievements.</div>
+        <div class="form-group">
+          <label class="form-label" for="usernameInput">Trainer Name</label>
+          <input class="form-input" type="text" id="usernameInput" maxlength="16" placeholder="Enter your name…" autocomplete="off"/>
+          <div class="form-error" id="usernameError">Please enter a trainer name.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Choose Your Starter</label>
+          <div class="starters">
+            <input type="radio" name="starter" id="s1" value="1" class="starter-option" checked/>
+            <label for="s1" class="starter-label">
+              <img class="starter-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="Bulbasaur"/>
+              <span class="starter-name">Bulbasaur</span>
+            </label>
+            <input type="radio" name="starter" id="s4" value="4" class="starter-option"/>
+            <label for="s4" class="starter-label">
+              <img class="starter-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="Charmander"/>
+              <span class="starter-name">Charmander</span>
+            </label>
+            <input type="radio" name="starter" id="s7" value="7" class="starter-option"/>
+            <label for="s7" class="starter-label">
+              <img class="starter-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="Squirtle"/>
+              <span class="starter-name">Squirtle</span>
+            </label>
+          </div>
+        </div>
+          <button class="btn btn-accent btn-full" onclick="saveProfile()">▶ Create Profile</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Settings</div>
+          <div class="card-sub">Preferences are saved even without a profile</div>
+          <div class="section-head">🎨 Theme</div>
+          <div class="theme-grid" id="themeGrid"></div>
+          <div class="section-head">⚔️ Battle Mode</div>
+          <div class="card-sub" style="text-align:left;margin-bottom:8px;">Choose how battles are calculated. Takes effect on your next run.</div>
+          <div id="battleModeSection"></div>
+        </div>`;
+    renderThemeSection();
+    renderBattleModeSection();
+    return;
+  }
+
+  const unlockedIds=new Set((p.achievements||[]).map(a=>a.id));
+  const unlockedCount=unlockedIds.size;
+  const totalAch=ACHIEVEMENTS.length;
+  const bestWin=p.bestWinPct!==null?p.bestWinPct+"%":"—";
+
+  main.innerHTML=`
+    <!-- PROFILE HERO -->
+    <div class="card">
+      <div class="profile-hero">
+        <img class="profile-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.starter}.png"
+          alt="" onerror="this.style.opacity=0"/>
+        <div class="profile-info">
+          <div class="profile-name">${escHtml(p.name)}</div>
+          <div class="profile-starter">Starter: ${STARTER_NAMES[p.starter]||"Unknown"}</div>
+          <div class="profile-joined">Trainer since ${formatDate(p.created)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <a href="game.html" class="btn btn-dark">▶ Play</a>
+          <button class="btn btn-danger" onclick="deleteProfile()">✕ Delete</button>
+        </div>
+      </div>
+      <div class="section-head">📊 Career Stats</div>
+      <div class="stat-grid-profile">
+        <div class="stat-box"><div class="stat-val">${p.runs||0}</div><div class="stat-lbl">Runs</div></div>
+        <div class="stat-box"><div class="stat-val">${bestWin}</div><div class="stat-lbl">Best Win %</div></div>
+        <div class="stat-box"><div class="stat-val">${unlockedCount}</div><div class="stat-lbl">Achievements</div></div>
+        <div class="stat-box"><div class="stat-val">${totalAch}</div><div class="stat-lbl">Total</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="card">
+      <div class="card-title">Settings</div>
+      <div class="card-sub">Your preferences are saved locally</div>
+      <div class="section-head">🎨 Theme</div>
+      <div class="theme-grid" id="themeGrid"></div>
+      <div class="section-head">⚔️ Battle Mode</div>
+      <div class="card-sub" style="text-align:left;margin-bottom:8px;">Choose how battles are calculated. Takes effect on your next run.</div>
+      <div id="battleModeSection"></div>
+    </div>
+
+    <!-- AD -->
+    <div style="width:100%;max-width:700px;">
+      <div class="ad-banner" style="border:2px solid #333;">
+        <div class="ad-slot">[ Advertisement ]</div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS -->
+    <div class="card">
+      <div class="card-title">Achievements</div>
+      <div class="card-sub">${unlockedCount} of ${totalAch} unlocked</div>
+      <div style="background:var(--mid);border:2px solid var(--border);height:14px;margin-bottom:14px;">
+        <div style="background:var(--dark);height:100%;width:${Math.round((unlockedCount/totalAch)*100)}%;transition:width .4s;"></div>
+      </div>
+      <div class="ach-grid" id="achGrid"></div>
+    </div>`;
+
+  renderThemeSection();
+  renderBattleModeSection();
+
+  // Render achievements
+  const grid=document.getElementById("achGrid");
+  ACHIEVEMENTS.forEach(ach=>{
+    const unlocked=unlockedIds.has(ach.id);
+    const entry=unlocked?(p.achievements||[]).find(a=>a.id===ach.id):null;
+    const div=document.createElement("div");
+    div.className=`ach-card ${unlocked?"unlocked":"locked"}`;
+    div.innerHTML=`
+      <img class="ach-item" src="${ITEM_URL(ach.item)}" alt="" onerror="this.style.opacity=0"/>
+      <div>
+        <div class="ach-name">${ach.name}</div>
+        <div class="ach-desc">${ach.desc}</div>
+        ${unlocked&&entry?`<div class="ach-date">Unlocked ${formatDate(entry.date)}</div>`:""}
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  pkmnInjectNav("profile");
+  render();
+});
+</script>
+</body>
+</html>

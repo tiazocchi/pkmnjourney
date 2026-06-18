@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PkmnJourney — Pokédex</title>
+<meta name="description" content="Your PkmnJourney Pokédex — catch all 898 Pokémon by drafting them in runs."/>
+<link rel="stylesheet" href="shared.css"/>
+<style>
+.dex-hero{background:var(--card);border-bottom:4px solid var(--border);padding:24px 20px;text-align:center;}
+.dex-hero h1{font-size:22px;font-weight:bold;text-transform:uppercase;letter-spacing:3px;color:var(--text);margin-bottom:4px;}
+.dex-hero p{font-size:11px;color:var(--light);}
+.progress-wrap{background:var(--card);border-bottom:4px solid var(--border);padding:14px 20px;}
+.progress-inner{max-width:700px;margin:0 auto;}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text);margin-bottom:6px;font-weight:bold;}
+.progress-stats{display:flex;gap:16px;margin-top:8px;font-size:10px;color:var(--light);}
+.progress-stats span{color:var(--text);font-weight:bold;}
+main{flex:1;padding:16px 20px;max-width:760px;margin:0 auto;width:100%;}
+.gen-section{margin-bottom:28px;}
+.gen-header{background:var(--dark);color:var(--bg);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border:2px solid var(--border);}
+.gen-title{font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;}
+.gen-count{font-size:10px;color:var(--light);}
+.dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:4px;}
+.dex-card{background:var(--card);border:2px solid var(--border);padding:6px 4px;display:flex;flex-direction:column;align-items:center;min-height:90px;position:relative;}
+.dex-card.caught{background:var(--mid);}
+.dex-card.shiny{background:#5a4a00;border-color:#c0a020;}
+.dex-num{font-size:7px;color:var(--light);position:absolute;top:3px;left:4px;}
+.tab-bar{display:flex;gap:0;overflow-x:auto;border-bottom:4px solid var(--border);background:var(--dark);}
+.tab-btn{background:transparent;border:none;border-right:2px solid var(--border);color:var(--text-on-dark);font-family:var(--font);font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:8px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.tab-btn:hover{color:var(--bg);}
+.tab-btn.active{background:var(--accent);color:var(--dark);font-weight:bold;}
+.gen-section{display:none;}
+.gen-section.active{display:block;}
+.dex-card.caught .dex-num{color:var(--light);}
+.dex-card.shiny .dex-num{color:#f0d060;}
+.dex-sprite{width:52px;height:52px;image-rendering:pixelated;display:block;margin:8px auto 2px;}
+.dex-sprite.silhouette{filter:brightness(0);opacity:.25;}
+.dex-card.caught .dex-sprite,.dex-card.shiny .dex-sprite{filter:none;opacity:1;}
+.dex-name{font-size:8px;color:var(--text);text-align:center;font-weight:bold;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dex-card.caught .dex-name{color:var(--bg);}
+.dex-card.shiny .dex-name{color:#f0d060;}
+.dex-types{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;}
+.shiny-badge{position:absolute;top:2px;right:3px;font-size:9px;}
+.ad-mid{margin:16px 0;}
+@media(max-width:500px){.dex-grid{grid-template-columns:repeat(auto-fill,minmax(66px,1fr));}}
+</style>
+</head>
+<body>
+
+<div class="ad-banner">
+  <div class="ad-slot">[ Advertisement — 728×90 ]</div>
+</div>
+
+<nav></nav>
+
+<div class="dex-hero">
+  <h1>📖 Pokédex</h1>
+  <p>Draft Pokémon in runs to catch them. Can you complete the Pokédex?</p>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-label">
+      <span>Overall Progress</span>
+      <span id="progressText">0 / 898</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="progress-stats">
+      Caught: <span id="statCaught">0</span> &nbsp;·&nbsp;
+      Shiny: <span id="statShiny">0</span> &nbsp;·&nbsp;
+      Remaining: <span id="statRemaining">898</span>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar" id="tabBar"></div>
+<main id="main"></main>
+
+<footer>
+  <div>PkmnJourney is a fan-made project, not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company.</div>
+  <div style="margin-top:4px;">Pokémon and all related names are trademarks of their respective owners.</div>
+  <div style="margin-top:8px;"><a href="index.html">Home</a> · <a href="profile.html">Profile</a> · <a href="#">Privacy Policy</a></div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+const SPRITE_URL = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+const TC = {Normal:"#A8A878",Fire:"#F08030",Water:"#6890F0",Grass:"#78C850",Electric:"#F8D030",Ice:"#98D8D8",Fighting:"#C03028",Poison:"#A040A0",Ground:"#E0C068",Flying:"#A890F0",Psychic:"#F85888",Bug:"#A8B820",Rock:"#B8A038",Ghost:"#705898",Dragon:"#7038F8",Dark:"#705848",Steel:"#B8B8D0",Fairy:"#EE99AC"};
+
+const GENS = [
+  {id:1,name:"Kanto",  game:"Red / Blue",      range:[1,  151]},
+  {id:2,name:"Johto",  game:"Gold / Silver",   range:[152,251]},
+  {id:3,name:"Hoenn",  game:"Ruby / Sapphire", range:[252,386]},
+  {id:4,name:"Sinnoh", game:"Diamond / Pearl", range:[387,493]},
+  {id:5,name:"Unova",  game:"Black / White",   range:[494,649]},
+  {id:6,name:"Kalos",  game:"X / Y",           range:[650,721]},
+  {id:7,name:"Alola",  game:"Sun / Moon",      range:[722,809]},
+  {id:8,name:"Galar",  game:"Sword / Shield",  range:[810,898]},
+];
+
+function getDex(){
+  try{return JSON.parse(localStorage.getItem("pkmnjourney_pokedex"))||{};}
+  catch{return{};}
+}
+
+function render(){
+  const dex=getDex();
+  const caughtIds=new Set(Object.keys(dex).map(Number));
+  const total=898;
+  const caughtCount=caughtIds.size;
+  const shinyCount=Object.values(dex).filter(p=>p.shiny).length;
+  const pct=Math.round((caughtCount/total)*100);
+  document.getElementById("progressFill").style.width=pct+"%";
+  document.getElementById("progressText").textContent=`${caughtCount} / ${total}`;
+  document.getElementById("statCaught").textContent=caughtCount;
+  document.getElementById("statShiny").textContent=shinyCount;
+  document.getElementById("statRemaining").textContent=total-caughtCount;
+
+  const main=document.getElementById("main");
+  const tabBar=document.getElementById("tabBar");
+  main.innerHTML="";
+  tabBar.innerHTML="";
+
+  GENS.forEach((gen, gi)=>{
+    const [min,max]=gen.range;
+    const genTotal=max-min+1;
+    const genCaught=Array.from({length:genTotal},(_,i)=>i+min).filter(id=>caughtIds.has(id)).length;
+
+    // Tab button
+    const btn=document.createElement("button");
+    btn.className="tab-btn"+(gi===0?" active":"");
+    btn.textContent=`Gen ${gen.id}`;
+    btn.title=`${gen.name} — ${gen.game}`;
+    btn.onclick=()=>switchTab(gi);
+    tabBar.appendChild(btn);
+
+    // Section
+    const section=document.createElement("div");
+    section.className="gen-section"+(gi===0?" active":"");
+    section.id=`gen-section-${gi}`;
+
+    const header=document.createElement("div");
+    header.className="gen-header";
+    header.innerHTML=`<div class="gen-title">Gen ${gen.id} — ${gen.name}</div><div class="gen-count">${gen.game} · ${genCaught}/${genTotal}</div>`;
+    section.appendChild(header);
+
+    const grid=document.createElement("div");
+    grid.className="dex-grid";
+
+    for(let id=min;id<=max;id++){
+      const caught=caughtIds.has(id);
+      const data=dex[id];
+      const isShiny=data&&data.shiny;
+      const card=document.createElement("div");
+      card.className=`dex-card${isShiny?" shiny":caught?" caught":""}`;
+      if(caught&&data){
+        card.innerHTML=`
+          <div class="dex-num">#${id}</div>
+          ${isShiny?'<div class="shiny-badge">✨</div>':''}
+          <img class="dex-sprite" src="${data.sprite||SPRITE_URL(id)}" alt="${data.name}" onerror="this.src='${SPRITE_URL(id)}'"/>
+          <div class="dex-name">${data.name}</div>
+          <div class="dex-types">
+            <span class="tag" style="background:${TC[data.type1]||'#888'}">${data.type1}</span>
+            ${data.type2?`<span class="tag" style="background:${TC[data.type2]||'#888'}">${data.type2}</span>`:""}
+          </div>`;
+      } else {
+        card.innerHTML=`
+          <div class="dex-num">#${id}</div>
+          <img class="dex-sprite silhouette" data-src="${SPRITE_URL(id)}" alt="???"/>
+          <div class="dex-name" style="color:var(--mid);">???</div>`;
+      }
+      grid.appendChild(card);
+    }
+    section.appendChild(grid);
+    main.appendChild(section);
+  });
+
+  setupLazyLoad();
+}
+
+function switchTab(gi){
+  document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("active",i===gi));
+  document.querySelectorAll(".gen-section").forEach((s,i)=>s.classList.toggle("active",i===gi));
+  window.scrollTo(0,0);
+  setupLazyLoad();
+}
+
+function setupLazyLoad(){
+  const observer=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const img=e.target;
+        img.src=img.dataset.src;
+        observer.unobserve(img);
+      }
+    });
+  },{rootMargin:"200px"});
+  document.querySelectorAll("img[data-src]").forEach(img=>observer.observe(img));
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  pkmnInjectNav("pokedex");
+  const p = pkmnGetProfile();
+  if(!p){
+    const banner = document.createElement("div");
+    banner.style.cssText = "background:var(--dark);border-bottom:3px solid var(--accent);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;";
+    banner.innerHTML = `
+      <span style="font-size:11px;color:var(--text-on-dark);">Create a trainer profile to track your catches and shinies.</span>
+      <a href="profile.html" class="btn btn-accent btn-sm">+ Create Profile</a>`;
+    document.querySelector(".tab-bar").before(banner);
+  }
+  render();
+});
+
+
+</script>
+</body>
+</html>
