@@ -148,10 +148,19 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
     <div class="card-title">New Journey</div>
     <div class="card-sub">Configure your run</div>
     <div class="ad-slot">[ Ad Banner ]</div>
-    <div class="section-head">📍 Journey</div>
-    <div class="opt selected" data-group="journey" data-val="gen1" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">Kanto Only (Gen 1)</span><div class="opt-desc">8 gyms + Pokémon League</div></div>
-    <div class="opt" data-group="journey" data-val="all" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">All Regions (Gen 1–8)</span><div class="opt-desc">Kanto through Galar</div></div>
-    <div id="teamModeSection" style="display:none;">
+    <div class="section-head">📍 Regions</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+      <button class="region-toggle-btn all-btn active" onclick="toggleAllRegions()">ALL</button>
+      <button class="region-toggle-btn active" data-gen="1" onclick="toggleRegion(this)">Kanto</button>
+      <button class="region-toggle-btn active" data-gen="2" onclick="toggleRegion(this)">Johto</button>
+      <button class="region-toggle-btn active" data-gen="3" onclick="toggleRegion(this)">Hoenn</button>
+      <button class="region-toggle-btn active" data-gen="4" onclick="toggleRegion(this)">Sinnoh</button>
+      <button class="region-toggle-btn active" data-gen="5" onclick="toggleRegion(this)">Unova</button>
+      <button class="region-toggle-btn active" data-gen="6" onclick="toggleRegion(this)">Kalos</button>
+      <button class="region-toggle-btn active" data-gen="7" onclick="toggleRegion(this)">Alola</button>
+      <button class="region-toggle-btn active" data-gen="8" onclick="toggleRegion(this)">Galar</button>
+    </div>
+    <div id="teamModeSection">
       <div class="section-head">👥 Team</div>
       <div class="opt selected" data-group="team" data-val="same" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔒 Keep Same Team</span><div class="opt-desc">One team of 6 all the way</div></div>
       <div class="opt" data-group="team" data-val="redraft" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🔄 Redraft Each Region</span><div class="opt-desc">Fresh draft before every region</div></div>
@@ -471,13 +480,14 @@ function applyShiny(mon){
 // STATE
 // ═══════════════════════════════════════════════
 let S={
-  journeyMode:"gen1",teamMode:"same",draftMode:"random10",
+  selectedGens:new Set([1,2,3,4,5,6,7,8]),
+  teamMode:"same",draftMode:"random10",
   team:[],pickIdx:0,rerolls:3,
   journeyResults:[],battleLog:[],
   regionLogs:[],activeRegionTab:0,
   unlockedAchs:[],draftModeUsed:"random10",
 };
-const getGens=()=>S.journeyMode==="gen1"?[GENS[0]]:GENS;
+const getGens=()=>GENS.filter(g=>S.selectedGens.has(g.id));
 
 // ═══════════════════════════════════════════════
 // SCREENS
@@ -495,13 +505,15 @@ function pick(el){
   const g=el.dataset.group;
   document.querySelectorAll(`.opt[data-group="${g}"]`).forEach(o=>{o.classList.remove("selected");o.querySelector(".opt-prefix").textContent=" ";});
   el.classList.add("selected");el.querySelector(".opt-prefix").textContent="▶";
-  if(g==="journey"){S.journeyMode=el.dataset.val;document.getElementById("teamModeSection").style.display=S.journeyMode==="all"?"block":"none";}
-  else if(g==="team")S.teamMode=el.dataset.val;
+  if(g==="team")S.teamMode=el.dataset.val;
   else if(g==="draft")S.draftMode=el.dataset.val;
 }
 
 function goToSetup(){
-  S={journeyMode:"gen1",teamMode:"same",draftMode:"random10",team:[],pickIdx:0,rerolls:3,journeyResults:[],battleLog:[],regionLogs:[],activeRegionTab:0,unlockedAchs:[],draftModeUsed:"random10"};
+  S={selectedGens:new Set([1,2,3,4,5,6,7,8]),teamMode:"same",draftMode:"random10",team:[],pickIdx:0,rerolls:3,journeyResults:[],battleLog:[],regionLogs:[],activeRegionTab:0,unlockedAchs:[],draftModeUsed:"random10"};
+  document.querySelectorAll(".region-toggle-btn").forEach(b=>b.classList.add("active"));
+  updateAllBtn();
+  updateTeamModeVisibility();
   document.querySelectorAll(".opt[data-group]").forEach(o=>{o.classList.remove("selected");o.querySelector(".opt-prefix").textContent=" ";});
   document.querySelector(".opt[data-group='journey'][data-val='gen1']").classList.add("selected");document.querySelector(".opt[data-group='journey'][data-val='gen1'] .opt-prefix").textContent="▶";
   document.querySelector(".opt[data-group='team'][data-val='same']").classList.add("selected");document.querySelector(".opt[data-group='team'][data-val='same'] .opt-prefix").textContent="▶";
@@ -513,6 +525,44 @@ function goToSetup(){
 // ═══════════════════════════════════════════════
 // DRAFT
 // ═══════════════════════════════════════════════
+function toggleRegion(btn){
+  const gen=parseInt(btn.dataset.gen);
+  if(S.selectedGens.has(gen)){
+    if(S.selectedGens.size===1)return; // must keep at least 1
+    S.selectedGens.delete(gen);
+    btn.classList.remove("active");
+  } else {
+    S.selectedGens.add(gen);
+    btn.classList.add("active");
+  }
+  updateAllBtn();
+  updateTeamModeVisibility();
+}
+
+function toggleAllRegions(){
+  const allActive=S.selectedGens.size===8;
+  if(allActive){
+    S.selectedGens=new Set([1]); // keep at least Kanto
+    document.querySelectorAll(".region-toggle-btn[data-gen]").forEach(b=>{
+      b.classList.toggle("active",parseInt(b.dataset.gen)===1);
+    });
+  } else {
+    S.selectedGens=new Set([1,2,3,4,5,6,7,8]);
+    document.querySelectorAll(".region-toggle-btn[data-gen]").forEach(b=>b.classList.add("active"));
+  }
+  updateAllBtn();
+  updateTeamModeVisibility();
+}
+
+function updateAllBtn(){
+  const btn=document.querySelector(".all-btn");
+  if(btn)btn.classList.toggle("active",S.selectedGens.size===8);
+}
+
+function updateTeamModeVisibility(){
+  document.getElementById("teamModeSection").style.display=S.selectedGens.size>1?"block":"none";
+}
+
 async function goToDraft(){
   S.draftModeUsed=S.draftMode;
   showScreen("draft");updateDraftUI();await generatePool();
@@ -591,16 +641,16 @@ async function generatePool(){
     let mons=[];
     if(S.draftMode==="random10"){
       let ids=[];
-      if(S.journeyMode==="gen1"){
-        const all=Array.from({length:151},(_,i)=>i+1).filter(i=>!usedIds.has(i));
-        // Pre-fetch all candidates to warm cache, then weight by real capture rates
+      const gens=getGens();
+      if(gens.length===1){
+        const g=gens[0];
+        const all=Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0]).filter(i=>!usedIds.has(i));
         await Promise.all(all.map(fetchMon));
         ids=weightedSample(all,6);
       } else {
-        for(const g of GENS){
+        for(const g of gens){
           const all=Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0]).filter(i=>!usedIds.has(i));
           if(all.length){
-            // Pre-fetch this gen's candidates before weighting
             await Promise.all(all.map(fetchMon));
             ids.push(weightedSampleOne(all));
           }

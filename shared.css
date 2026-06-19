@@ -218,6 +218,9 @@ nav {
   border-bottom: 1px solid var(--border);
   padding-bottom: 4px;
 }
+.region-toggle-btn{font-family:var(--font);font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:6px 10px;border:2px solid var(--border);background:var(--muted);color:var(--light);cursor:pointer;}
+.region-toggle-btn.active{background:var(--dark);color:var(--text-on-dark);border-color:var(--accent);}
+.region-toggle-btn.all-btn{border-color:var(--accent);min-width:44px;}
 
 /* ── Team bar ── */
 .team-bar-wrap{margin:12px -20px 12px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
