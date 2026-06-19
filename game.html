@@ -44,13 +44,13 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 
 .section-head{font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:16px 0 6px;border-bottom:1px solid var(--border);padding-bottom:4px;}
 
-.team-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:12px;}
-.team-slot{background:var(--muted);border:2px solid var(--border);aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.team-slot img{width:70%;height:70%;image-rendering:pixelated;}
-.team-slot img{width:52px;height:52px;image-rendering:pixelated;}
-.team-slot .slot-name{font-size:8px;color:var(--text);text-align:center;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;}
-.team-slot.filled{background:var(--card);border-color:var(--accent);}
-.team-slot .slot-empty{font-size:20px;color:var(--border);opacity:0.4;}
+.team-bar-wrap{margin:8px 0 12px;padding:0 2px;}
+.team-bar{display:flex;gap:2px;}
+.team-slot{flex:1;background:var(--muted);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;min-width:0;}
+.team-slot img{width:48px;height:48px;image-rendering:pixelated;}
+.team-slot .slot-name{font-size:7px;color:var(--text);text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;margin-top:2px;}
+.team-slot.filled{background:var(--card);border-bottom:2px solid var(--accent);margin-bottom:-1px;}
+.team-slot .slot-empty{font-size:18px;color:var(--border);opacity:0.3;}
 
 .tag{font-size:8px;padding:1px 4px;border-radius:2px;font-weight:bold;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);display:inline-block;}
 
@@ -128,8 +128,7 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 .modal-close{position:absolute;top:8px;right:8px;background:transparent;color:var(--light);border:1px solid var(--border);font-family:var(--font);font-size:12px;padding:3px 8px;cursor:pointer;}
 
 @media(max-width:500px){
-  .team-slot{width:70px;height:72px;}
-  .team-slot img{width:40px;height:40px;}
+  .team-slot img{width:55%;height:55%;}
   nav{padding:0 10px;}
   .battle-detail-grid{grid-template-columns:1fr;}
   .mon-card{padding:4px;}
@@ -169,19 +168,19 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
   <div class="card">
     <div class="card-title" id="draftTitle">Draft Your Team</div>
     <div class="card-sub" id="draftSub"></div>
-    <div class="team-bar" id="teamBar"></div>
+    <div class="team-bar-wrap"><div class="team-bar" id="teamBar"></div></div>
     <div id="rolledBanner" class="rolled-banner" style="display:none;"></div>
     <div id="poolLoading" class="loading" style="display:none;"><span class="spin">⏳</span><div>Fetching from PokéAPI…</div></div>
     <div id="poolError" style="display:none;color:#c62828;font-size:11px;text-align:center;padding:20px;">Failed to load. Check your connection and reroll.</div>
     <div id="poolEmpty" style="display:none;text-align:center;padding:24px;font-size:11px;color:var(--mid);">No Pokémon found. Use a reroll!</div>
     <div class="pool-grid" id="poolGrid" style="display:none;"></div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
-      <button id="rerollBtn" onclick="doReroll()" style="flex-shrink:0;font-family:var(--font);font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px 16px;cursor:pointer;border:2px solid var(--accent);color:var(--accent);background:transparent;display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:10px;">
+      <button id="rerollBtn" onclick="doReroll()" style="font-family:var(--font);font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px 16px;cursor:pointer;border:2px solid var(--accent);color:var(--accent);background:transparent;display:flex;align-items:center;gap:8px;flex-shrink:0;">
         <span style="font-size:14px;">🔄</span>
         <span>Reroll</span>
-        <span style="background:var(--accent);color:var(--dark);font-size:10px;font-weight:bold;padding:2px 7px;border-radius:10px;min-width:18px;text-align:center;" id="rerollCount">3</span>
+        <span style="background:var(--accent);color:var(--dark);font-size:10px;font-weight:bold;padding:2px 8px;border-radius:10px;min-width:20px;text-align:center;" id="rerollCount">3</span>
       </button>
-      <div style="flex:1;font-size:10px;color:var(--mid);" id="pickStatus"></div>
+      <div style="font-size:11px;color:var(--accent);font-weight:bold;letter-spacing:1px;" id="pickStatus"></div>
     </div>
     <div id="teamDoneSection" style="display:none;text-align:center;padding:12px 0;">
       <div style="font-size:13px;color:var(--dark);margin-bottom:10px;">✅ Team complete!</div>
@@ -194,7 +193,7 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 <div class="screen" id="screen-journey">
   <div class="card">
     <div class="card-title">The Journey</div>
-    <div class="team-bar" id="journeyTeamBar"></div>
+    <div class="team-bar-wrap"><div class="team-bar" id="journeyTeamBar"></div></div>
     <div id="simStatus" style="display:none;text-align:center;font-size:11px;color:var(--mid);padding:5px;border:1px solid var(--mid);background:var(--card);margin-bottom:8px;">⚔️ Simulating battles…</div>
     <div class="region-tabs" id="regionTabs"></div>
     <div class="battle-log" id="battleLog"></div>
@@ -215,7 +214,7 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
       <div class="card-title" id="resultRank"></div>
       <div class="card-sub">Journey Complete — pkmnjourney.com</div>
     </div>
-    <div class="team-bar" id="resultsTeamBar" style="justify-content:center;"></div>
+    <div class="team-bar-wrap"><div class="team-bar" id="resultsTeamBar"></div></div>
     <div class="stat-grid" id="statGrid"></div>
     <div id="genBreakdown"></div>
     <div id="achSection" style="display:none;">
@@ -524,7 +523,7 @@ function updateDraftUI(){
   const isRedraft=S.journeyResults.length>0;
   const genLabel=isRedraft?` — ${gens[S.journeyResults.length]?.name}`:"";
   document.getElementById("draftTitle").textContent=`Draft Your Team${genLabel}`;
-  document.getElementById("draftSub").textContent=`Pick ${Math.max(0,6-S.pickIdx)} more · ${S.rerolls} reroll${S.rerolls!==1?"s":""} left`;
+  document.getElementById("draftSub").textContent="";
   document.getElementById("rerollCount").textContent=S.rerolls;
   document.getElementById("rerollBtn").disabled=S.rerolls<=0;
   document.getElementById("pickStatus").textContent=`Pick ${S.pickIdx+1} of 6`;

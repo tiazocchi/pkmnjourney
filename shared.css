@@ -220,7 +220,15 @@ nav {
 }
 
 /* ── Team bar ── */
-.team-bar { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.team-bar-wrap{margin:12px -20px 12px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.team-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:0;width:100%;}
+.team-slot{background:var(--muted);border-right:1px solid var(--border);aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;overflow:hidden;}
+.team-slot:last-child{border-right:none;}
+.team-slot img{width:65%;height:65%;image-rendering:pixelated;}
+.team-slot .slot-name{font-size:7px;color:var(--text);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;}
+.team-slot.filled{background:var(--card);}
+.team-slot.filled{border-bottom:2px solid var(--accent);}
+.team-slot .slot-empty{font-size:20px;color:var(--border);opacity:0.4;}
 .team-slot {
   background: var(--muted);
   border: 2px solid var(--border);
