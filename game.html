@@ -44,16 +44,17 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 
 .section-head{font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:16px 0 6px;border-bottom:1px solid var(--border);padding-bottom:4px;}
 
-.team-bar{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;}
-.team-slot{background:var(--muted);border:2px solid var(--border);width:90px;height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.team-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:12px;}
+.team-slot{background:var(--muted);border:2px solid var(--border);aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.team-slot img{width:70%;height:70%;image-rendering:pixelated;}
 .team-slot img{width:52px;height:52px;image-rendering:pixelated;}
 .team-slot .slot-name{font-size:8px;color:var(--text);text-align:center;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;}
 .team-slot.filled{background:var(--card);border-color:var(--accent);}
-.team-slot .slot-empty{font-size:24px;color:var(--border);}
+.team-slot .slot-empty{font-size:20px;color:var(--border);opacity:0.4;}
 
 .tag{font-size:8px;padding:1px 4px;border-radius:2px;font-weight:bold;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);display:inline-block;}
 
-.pool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:420px;overflow-y:auto;border:2px solid var(--border);padding:4px;margin-bottom:8px;background:var(--muted);}
+.pool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:420px;overflow-y:auto;border:2px solid var(--border);padding:4px;margin-bottom:8px;background:var(--muted);}
 .mon-card{background:var(--card);border:2px solid var(--border);padding:6px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .1s;}
 .mon-card:hover{border-color:var(--accent);}
 .mon-card.shiny{border-color:#c0a020;background:#fdf8e0;}
@@ -130,9 +131,7 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
   .team-slot{width:70px;height:72px;}
   .team-slot img{width:40px;height:40px;}
   nav{padding:0 10px;}
-  .pool-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));}
   .battle-detail-grid{grid-template-columns:1fr;}
-  .pool-grid{grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;}
   .mon-card{padding:4px;}
   .mon-card img{width:48px;height:48px;}
 }
@@ -177,7 +176,11 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
     <div id="poolEmpty" style="display:none;text-align:center;padding:24px;font-size:11px;color:var(--mid);">No Pokémon found. Use a reroll!</div>
     <div class="pool-grid" id="poolGrid" style="display:none;"></div>
     <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
-      <button class="btn btn-outline" id="rerollBtn" onclick="doReroll()">🔄 Reroll (<span id="rerollCount">3</span>)</button>
+      <button id="rerollBtn" onclick="doReroll()" style="flex-shrink:0;font-family:var(--font);font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px 16px;cursor:pointer;border:2px solid var(--accent);color:var(--accent);background:transparent;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;">🔄</span>
+        <span>Reroll</span>
+        <span style="background:var(--accent);color:var(--dark);font-size:10px;font-weight:bold;padding:2px 7px;border-radius:10px;min-width:18px;text-align:center;" id="rerollCount">3</span>
+      </button>
       <div style="flex:1;font-size:10px;color:var(--mid);" id="pickStatus"></div>
     </div>
     <div id="teamDoneSection" style="display:none;text-align:center;padding:12px 0;">
@@ -539,7 +542,7 @@ function renderTeamBar(elId,team){
     const slot=document.createElement("div");
     slot.className="team-slot"+(p?" filled":"");
     if(p)slot.innerHTML=`<img src="${p.sprite}" alt="${p.name}" onerror="this.src='${SPRITE(p.id)}'"/><div class="slot-name">${p.shiny?"✨":""}${p.name}</div>`;
-    else slot.innerHTML=`<div class="slot-empty">?</div>`;
+    else slot.innerHTML=`<div class="slot-empty">◌</div>`;
     bar.appendChild(slot);
   }
 }
