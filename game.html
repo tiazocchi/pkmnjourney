@@ -53,7 +53,7 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 
 .tag{font-size:8px;padding:1px 4px;border-radius:2px;font-weight:bold;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);display:inline-block;}
 
-.pool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;max-height:320px;overflow-y:auto;border:2px solid var(--border);padding:6px;margin-bottom:8px;background:var(--muted);}
+.pool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:420px;overflow-y:auto;border:2px solid var(--border);padding:6px;margin-bottom:8px;background:var(--muted);}
 .mon-card{background:var(--card);border:2px solid var(--border);padding:6px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .1s;}
 .mon-card:hover{border-color:var(--accent);}
 .mon-card.shiny{border-color:#c0a020;background:#fdf8e0;}
@@ -156,7 +156,7 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
       <div class="opt" data-group="team" data-val="redraft" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🔄 Redraft Each Region</span><div class="opt-desc">Fresh draft before every region</div></div>
     </div>
     <div class="section-head">🎲 Draft Mode</div>
-    <div class="opt selected" data-group="draft" data-val="random10" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔀 Random Pick</span><div class="opt-desc">10 random Pokémon (1 per gen if all-gens), pick 1</div></div>
+    <div class="opt selected" data-group="draft" data-val="random10" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔀 Random Pick</span><div class="opt-desc">6 random Pokémon (1 per gen if all-gens), pick 1</div></div>
     <div class="opt" data-group="draft" data-val="typeroll" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🎰 Type Roll</span><div class="opt-desc">A gen + type is rolled — pick from all matching Pokémon</div></div>
     <button class="btn btn-dark btn-full" onclick="goToDraft()" style="margin-top:16px;">▶ Start Draft</button>
   </div>
@@ -590,7 +590,7 @@ async function generatePool(){
         const all=Array.from({length:151},(_,i)=>i+1).filter(i=>!usedIds.has(i));
         // Pre-fetch all candidates to warm cache, then weight by real capture rates
         await Promise.all(all.map(fetchMon));
-        ids=weightedSample(all,10);
+        ids=weightedSample(all,6);
       } else {
         for(const g of GENS){
           const all=Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0]).filter(i=>!usedIds.has(i));
