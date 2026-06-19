@@ -237,7 +237,7 @@ const GYM_BADGES = {
 
 const TRAINER_SPRITES = {
   // Gen 1
-  "Lorelei":"lorelei","Bruno":"bruno","Agatha":"agatha-gen3","Lance":"lance",
+  "Lorelei":"lorelei-gen3","Bruno":"bruno","Agatha":"agatha-gen3","Lance":"lance",
   "Blue (Bulbasaur)":"blue","Blue (Charmander)":"blue","Blue (Squirtle)":"blue",
   // Gen 2
   "Will":"will","Koga":"koga","Karen":"karen",
