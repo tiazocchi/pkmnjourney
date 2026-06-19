@@ -190,6 +190,7 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
     <div class="card-title">The Journey</div>
     <div class="team-bar" id="journeyTeamBar"></div>
     <div id="simStatus" style="display:none;text-align:center;font-size:11px;color:var(--mid);padding:5px;border:1px solid var(--mid);background:var(--card);margin-bottom:8px;">⚔️ Simulating battles…</div>
+    <div class="region-tabs" id="regionTabs"></div>
     <div class="battle-log" id="battleLog"></div>
     <div class="gen-pills" id="genPills"></div>
     <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
@@ -440,6 +441,7 @@ async function fetchMon(id){
     def:d.stats[2].base_stat, spa:d.stats[3].base_stat,
     spd:d.stats[4].base_stat, spe:d.stats[5].base_stat,
     baseTotal:d.stats.reduce((s,x)=>s+x.base_stat,0),
+    captureRate:d.capture_rate||45,
     sprite:d.sprites.front_default||SPRITE(id),
     spriteshiny:d.sprites.front_shiny||null,
   };
@@ -467,6 +469,7 @@ let S={
   journeyMode:"gen1",teamMode:"same",draftMode:"random10",
   team:[],pickIdx:0,rerolls:3,
   journeyResults:[],battleLog:[],
+  regionLogs:[],activeRegionTab:0,
   unlockedAchs:[],draftModeUsed:"random10",
 };
 const getGens=()=>S.journeyMode==="gen1"?[GENS[0]]:GENS;
@@ -493,7 +496,7 @@ function pick(el){
 }
 
 function goToSetup(){
-  S={journeyMode:"gen1",teamMode:"same",draftMode:"random10",team:[],pickIdx:0,rerolls:3,journeyResults:[],battleLog:[],unlockedAchs:[],draftModeUsed:"random10"};
+  S={journeyMode:"gen1",teamMode:"same",draftMode:"random10",team:[],pickIdx:0,rerolls:3,journeyResults:[],battleLog:[],regionLogs:[],activeRegionTab:0,unlockedAchs:[],draftModeUsed:"random10"};
   document.querySelectorAll(".opt[data-group]").forEach(o=>{o.classList.remove("selected");o.querySelector(".opt-prefix").textContent=" ";});
   document.querySelector(".opt[data-group='journey'][data-val='gen1']").classList.add("selected");document.querySelector(".opt[data-group='journey'][data-val='gen1'] .opt-prefix").textContent="▶";
   document.querySelector(".opt[data-group='team'][data-val='same']").classList.add("selected");document.querySelector(".opt[data-group='team'][data-val='same'] .opt-prefix").textContent="▶";
@@ -544,6 +547,38 @@ function showPoolState(state){
   if(state)document.getElementById(state).style.display=state==="poolGrid"?"grid":"block";
 }
 
+// Weighted random selection using capture rates from cache
+// Pokémon not yet fetched default to weight 45 (uncommon)
+// Minimum weight of 5 ensures even legendaries can appear occasionally
+function getWeight(id){
+  const mon=monCache[id];
+  const rate=mon?mon.captureRate:45;
+  // Normalise by 255 — common pokemon ~1.0, legendaries ~0.01
+  return rate/255;
+}
+
+function weightedSampleOne(ids){
+  const weights=ids.map(getWeight);
+  const total=weights.reduce((s,w)=>s+w,0);
+  let r=Math.random()*total;
+  for(let i=0;i<ids.length;i++){
+    r-=weights[i];
+    if(r<=0)return ids[i];
+  }
+  return ids[ids.length-1];
+}
+
+function weightedSample(ids,n){
+  const result=[];
+  const pool=[...ids];
+  for(let i=0;i<Math.min(n,pool.length);i++){
+    const chosen=weightedSampleOne(pool);
+    result.push(chosen);
+    pool.splice(pool.indexOf(chosen),1);
+  }
+  return result;
+}
+
 async function generatePool(){
   showPoolState("poolLoading");
   const usedIds=new Set(S.team.map(p=>p.id));
@@ -553,14 +588,20 @@ async function generatePool(){
       let ids=[];
       if(S.journeyMode==="gen1"){
         const all=Array.from({length:151},(_,i)=>i+1).filter(i=>!usedIds.has(i));
-        ids=shuffle(all).slice(0,10);
+        // Pre-fetch all candidates to warm cache, then weight by real capture rates
+        await Promise.all(all.map(fetchMon));
+        ids=weightedSample(all,10);
       } else {
         for(const g of GENS){
           const all=Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0]).filter(i=>!usedIds.has(i));
-          if(all.length)ids.push(all[randInt(0,all.length-1)]);
+          if(all.length){
+            // Pre-fetch this gen's candidates before weighting
+            await Promise.all(all.map(fetchMon));
+            ids.push(weightedSampleOne(all));
+          }
         }
       }
-      mons=(await Promise.all(ids.map(fetchMon))).filter(Boolean);
+      mons=ids.map(id=>monCache[id]).filter(Boolean);
     } else {
       const availGens=getGens();
       const g=availGens[randInt(0,availGens.length-1)];
@@ -644,7 +685,10 @@ async function startJourney(){
   showScreen("journey");
   renderTeamBar("journeyTeamBar",S.team);
   document.getElementById("battleLog").innerHTML="";
+  document.getElementById("regionTabs").innerHTML="";
   document.getElementById("genPills").innerHTML="";
+  S.regionLogs=[];
+  S.activeRegionTab=0;
   document.getElementById("resultsBtn").style.display="none";
   document.getElementById("nextRegionBtn").style.display="none";
   document.getElementById("simStatus").style.display="block";
@@ -658,7 +702,12 @@ async function runGens(startIdx){
     const enemyData=ENEMY_DATA[gen.enemyKey];
     const genRes={gen,battles:[],wins:0,losses:0};
 
-    // Pick champion randomly if multiple
+    // Start a fresh log buffer for this region
+    S.regionLogs.push([]);
+    S.activeRegionTab=gi;
+    document.getElementById("battleLog").innerHTML="";
+    addRegionTab(gi,gen.name,null); // null = in progress
+
     const champion=enemyData.champions[randInt(0,enemyData.champions.length-1)];
     const battles=[
       ...enemyData.gyms.map(t=>({...t,stage:"gym"})),
@@ -678,7 +727,15 @@ async function runGens(startIdx){
     }
 
     S.journeyResults.push(genRes);
-    updateGenPills();updateTotalScore();
+
+    // Snapshot this region's log HTML
+    S.regionLogs[gi]=document.getElementById("battleLog").innerHTML;
+
+    // Update tab to show win/loss
+    updateRegionTab(gi,gen.name,genRes.wins,genRes.losses);
+
+    updateGenPills();
+    updateTotalScore();
     checkAchievements();
 
     if(gi<gens.length-1){
@@ -697,6 +754,54 @@ async function runGens(startIdx){
   document.getElementById("simStatus").style.display="none";
   document.getElementById("resultsBtn").style.display="inline-block";
   checkAchievements();
+}
+
+function addRegionTab(idx, name, result){
+  const tabs=document.getElementById("regionTabs");
+  // Remove existing tab for this index if present
+  const existing=document.getElementById(`tab-${idx}`);
+  if(existing)existing.remove();
+  const tab=document.createElement("button");
+  tab.className="region-tab"+(idx===S.activeRegionTab?" active":"");
+  tab.id=`tab-${idx}`;
+  tab.textContent=name;
+  tab.onclick=()=>switchRegionTab(idx);
+  tabs.appendChild(tab);
+}
+
+function updateRegionTab(idx, name, wins, losses){
+  const tab=document.getElementById(`tab-${idx}`);
+  if(!tab)return;
+  const won=wins>=losses;
+  tab.textContent=`${name} ${wins}W/${losses}L`;
+  tab.classList.remove("win","loss");
+  tab.classList.add(won?"win":"loss");
+}
+
+function switchRegionTab(idx){
+  if(S.regionLogs[idx]===undefined)return;
+  S.activeRegionTab=idx;
+  // Update active state on all tabs
+  document.querySelectorAll(".region-tab").forEach((t,i)=>{
+    t.classList.toggle("active",i===idx);
+  });
+  // Swap log content
+  document.getElementById("battleLog").innerHTML=S.regionLogs[idx];
+  // Re-attach click handlers since innerHTML wipes them
+  reattachBattleRowHandlers();
+}
+
+function reattachBattleRowHandlers(){
+  const log=document.getElementById("battleLog");
+  const rows=log.querySelectorAll(".battle-row");
+  rows.forEach(row=>{
+    const detail=row.nextElementSibling;
+    if(!detail||!detail.classList.contains("battle-detail"))return;
+    row.onclick=()=>{
+      detail.classList.toggle("open");
+      row.querySelector("span:last-child").textContent=detail.classList.contains("open")?"▲":"▼";
+    };
+  });
 }
 
 function appendBattleRow(b){
@@ -849,9 +954,9 @@ function goToResults(){
         const wrap=document.createElement("div");
         wrap.title=`${b.name} — ${b.result==="win"?"Won":"Lost"}`;
         wrap.style.cssText=`opacity:${b.result==="win"?1:0.25};filter:${b.result==="win"?"none":"grayscale(1)"};`;
-        if(badgeName)
-          spriteHtml=`<img src="${BADGE(badgeName)}" style="width:20px;height:20px;image-rendering:pixelated;opacity:${win?1:0.3};filter:${win?"none":"grayscale(1)"};" onerror="this.style.display='none'"/>`;
-        else spriteHtml=`<span style="font-size:14px;">${win?"🏅":"⭕"}</span>`;
+        wrap.innerHTML=badgeName
+          ?`<img src="${BADGE(badgeName)}" style="width:28px;height:28px;image-rendering:pixelated;" onerror="this.style.display='none'"/>`
+          :`<span style="font-size:18px;">🏅</span>`;
         badgeRow.appendChild(wrap);
       });
       section.appendChild(badgeRow);
