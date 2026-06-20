@@ -42,7 +42,7 @@ main{flex:1;padding:16px 20px;max-width:760px;margin:0 auto;width:100%;}
 .dex-types{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;margin-top:2px;}
 .shiny-badge{position:absolute;top:2px;right:3px;font-size:9px;}
 .ad-mid{margin:16px 0;}
-@media(max-width:500px){.dex-grid{grid-template-columns:repeat(auto-fill,minmax(66px,1fr));}}
+@media(max-width:500px){.dex-grid{grid-template-columns:repeat(3,1fr);}}
 </style>
 </head>
 <body>
@@ -75,7 +75,10 @@ main{flex:1;padding:16px 20px;max-width:760px;margin:0 auto;width:100%;}
   </div>
 </div>
 
-<div class="tab-bar" id="tabBar"></div>
+<div style="display:flex;align-items:center;justify-content:space-between;background:var(--dark);border-bottom:2px solid var(--border);padding:6px 16px;">
+  <div class="tab-bar" id="tabBar" style="border:none;background:transparent;"></div>
+  <button id="shinyToggle" onclick="toggleShiny()" style="font-family:var(--font);font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:5px 12px;border:2px solid var(--border);background:var(--muted);color:var(--light);cursor:pointer;white-space:nowrap;flex-shrink:0;">✨ Shiny</button>
+</div>
 <main id="main"></main>
 
 <footer>
@@ -103,6 +106,30 @@ const GENS = [
 function getDex(){
   try{return JSON.parse(localStorage.getItem("pkmnjourney_pokedex"))||{};}
   catch{return{};}
+}
+
+let showShiny=false;
+
+function toggleShiny(){
+  showShiny=!showShiny;
+  const btn=document.getElementById("shinyToggle");
+  btn.style.background=showShiny?"var(--accent)":"var(--muted)";
+  btn.style.color=showShiny?"var(--dark)":"var(--light)";
+  btn.style.borderColor=showShiny?"var(--accent)":"var(--border)";
+  // Update sprites in place without re-rendering
+  const dex=getDex();
+  document.querySelectorAll(".dex-card").forEach(card=>{
+    const id=parseInt(card.dataset.id);
+    if(!id)return;
+    const data=dex[id];
+    if(!data)return;
+    const img=card.querySelector(".dex-sprite");
+    if(!img)return;
+    img.src=showShiny&&data.shiny
+      ?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`
+      :(data.sprite||SPRITE_URL(id));
+    card.className=`dex-card${data.shiny&&showShiny?" shiny":" caught"}`;
+  });
 }
 
 function render(){
@@ -154,12 +181,18 @@ function render(){
       const data=dex[id];
       const isShiny=data&&data.shiny;
       const card=document.createElement("div");
-      card.className=`dex-card${isShiny?" shiny":caught?" caught":""}`;
+      card.dataset.id=id;
+      card.className=`dex-card${caught?" caught":""}`;
       if(caught&&data){
+        // In shiny mode show shiny sprite if available, otherwise normal
+        const showingShiny=showShiny&&isShiny;
+        const spriteUrl=showingShiny
+          ?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`
+          :(data.sprite||SPRITE_URL(id));
         card.innerHTML=`
           <div class="dex-num">#${id}</div>
-          ${isShiny?'<div class="shiny-badge">✨</div>':''}
-          <img class="dex-sprite" src="${data.sprite||SPRITE_URL(id)}" alt="${data.name}" onerror="this.src='${SPRITE_URL(id)}'"/>
+          ${isShiny?`<div class="shiny-badge">${showShiny?"✨":"⭐"}</div>`:""}
+          <img class="dex-sprite" src="${spriteUrl}" alt="${data.name}" onerror="this.src='${SPRITE_URL(id)}'"/>
           <div class="dex-name">${data.name}</div>
           <div class="dex-types">
             <span class="tag" style="background:${TC[data.type1]||'#888'}">${data.type1}</span>
@@ -183,7 +216,6 @@ function render(){
 function switchTab(gi){
   document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("active",i===gi));
   document.querySelectorAll(".gen-section").forEach((s,i)=>s.classList.toggle("active",i===gi));
-  window.scrollTo(0,0);
   setupLazyLoad();
 }
 
