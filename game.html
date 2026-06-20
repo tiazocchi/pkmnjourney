@@ -814,7 +814,46 @@ async function runGens(startIdx){
       const res=simulate(S.team,b);
       const entry={...b,...res,genName:gen.name};
       genRes.battles.push(entry);
-      if(res.result==="win")genRes.wins++;else genRes.losses++;
+
+      // Track win/loss for this region
+      if(res.result==="win"){
+        genRes.wins++;
+      } else {
+        genRes.losses++;
+
+        // ── Hardcore mode: end run immediately on any loss ──
+        if(localStorage.getItem("pkmnjourney_hardcore")==="true"){
+          // Append the losing battle row first
+          S.battleLog.push(entry);
+          appendBattleRow(entry);
+          document.getElementById("battleLog").scrollTop=99999;
+
+          // Snapshot region log and update tab
+          S.journeyResults.push(genRes);
+          S.regionLogs[gi]=document.getElementById("battleLog").innerHTML;
+          updateRegionTab(gi,gen.name,genRes.wins,genRes.losses);
+          updateGenPills();
+          updateTotalScore();
+
+          // Show game over banner in battle log
+          const over=document.createElement("div");
+          over.style.cssText="text-align:center;padding:20px 10px;color:var(--loss,#ef4444);font-weight:bold;font-size:14px;border-top:2px solid var(--loss,#ef4444);margin-top:8px;";
+          over.innerHTML=`💀 HARDCORE — RUN OVER<br/>
+            <span style="font-size:10px;font-weight:normal;color:var(--light);">
+              Defeated by ${b.name}
+            </span>`;
+          document.getElementById("battleLog").appendChild(over);
+
+          // Hide sim status, show results button
+          document.getElementById("simStatus").style.display="none";
+          document.getElementById("nextRegionBtn").style.display="none";
+          document.getElementById("resultsBtn").style.display="inline-block";
+
+          // Stop the run entirely
+          return;
+        }
+      }
+
       S.battleLog.push(entry);
       appendBattleRow(entry);
       document.getElementById("battleLog").scrollTop=99999;

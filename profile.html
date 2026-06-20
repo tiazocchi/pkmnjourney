@@ -299,9 +299,13 @@ function render(){
           <div class="section-head">⚔️ Battle Mode</div>
           <div class="card-sub" style="text-align:left;margin-bottom:8px;">Choose how battles are calculated. Takes effect on your next run.</div>
           <div id="battleModeSection"></div>
+          <div class="section-head">💀 Hardcore Mode</div>
+          <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss ends your run. Takes effect on your next run.</div>
+          <div id="hardcoreSection"></div>
         </div>`;
     renderThemeSection();
     renderBattleModeSection();
+    renderHardcoreSection(); // always render hardcore toggle
     return;
   }
 
@@ -344,6 +348,9 @@ function render(){
       <div class="section-head">⚔️ Battle Mode</div>
       <div class="card-sub" style="text-align:left;margin-bottom:8px;">Choose how battles are calculated. Takes effect on your next run.</div>
       <div id="battleModeSection"></div>
+      <div class="section-head">💀 Hardcore Mode</div>
+      <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss ends your run. Takes effect on your next run.</div>
+      <div id="hardcoreSectionNoProfile"></div>
     </div>
 
     <!-- AD -->
@@ -365,6 +372,7 @@ function render(){
 
   renderThemeSection();
   renderBattleModeSection();
+  renderHardcoreSection();
 
   // Render achievements
   const grid=document.getElementById("achGrid");
@@ -383,6 +391,49 @@ function render(){
     grid.appendChild(div);
   });
 }
+
+
+// ── Hardcore Mode ──────────────────────────────────────
+// Stored in localStorage as "pkmnjourney_hardcore" = "true"/"false"
+// Independent of profile — works even without one
+
+function getHardcoreMode(){
+  return localStorage.getItem("pkmnjourney_hardcore")==="true";
+}
+
+function toggleHardcoreMode(){
+  const cur=getHardcoreMode();
+  localStorage.setItem("pkmnjourney_hardcore",String(!cur));
+  renderHardcoreSection();
+}
+
+function renderHardcoreSection(){
+  const on=getHardcoreMode();
+  // Render into both profile view and no-profile view containers
+  ["hardcoreSection","hardcoreSectionNoProfile"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML=`
+      <div class="mode-card${on?" selected":""}" onclick="toggleHardcoreMode()">
+        <div class="mode-header">
+          <span class="mode-prefix">${on?"▶":" "}</span>
+          <span class="mode-title">${on?"Hardcore ON":"Hardcore OFF"}</span>
+          <span class="mode-tag">${on?"💀 Active":"Inactive"}</span>
+        </div>
+        <div class="mode-desc">${on
+          ?"One loss ends your run immediately. No second chances. Every battle matters."
+          :"Normal mode — a loss is just a loss. Keep battling."
+        }</div>
+        <div class="mode-bullets">
+          <div class="mode-bullet"><span class="mode-bullet-icon">💀</span><span>Any single battle loss ends the run</span></div>
+          <div class="mode-bullet"><span class="mode-bullet-icon">🏆</span><span>Results are saved up to the point of defeat</span></div>
+          <div class="mode-bullet"><span class="mode-bullet-icon">⚠️</span><span>Draft carefully — type matchups are critical</span></div>
+        </div>
+      </div>`;
+  });
+}
+
+
 
 document.addEventListener("DOMContentLoaded",()=>{
   pkmnInjectNav("profile");
