@@ -14,19 +14,12 @@
 .hero p{font-size:13px;color:var(--accent);margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;}
 .hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 .hero-deco{display:flex;justify-content:center;gap:8px;margin-bottom:20px;}
-.features{background:var(--dark);padding:36px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:900px;margin:0 auto;width:100%;}
-.feature-card{background:var(--card);border:2px solid var(--border);border-top:3px solid var(--accent);padding:20px 16px;text-align:center;box-shadow:4px 4px 0 var(--border);}
+.features{background:var(--bg);padding:36px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:900px;margin:0 auto;width:100%;}
+.feature-card{background:var(--card);border:2px solid var(--border);border-top:3px solid var(--accent);padding:20px 16px;text-align:center;}
 .feature-icon-img{width:48px;height:48px;image-rendering:pixelated;display:block;margin:0 auto 12px;}
 .feature-card h3{color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
 .feature-card p{color:var(--light);font-size:11px;line-height:1.7;}
-.how-section{background:var(--card);border-top:4px solid var(--border);border-bottom:4px solid var(--border);padding:36px 20px;text-align:center;}
-.how-section h2{font-size:16px;text-transform:uppercase;letter-spacing:3px;color:var(--text);margin-bottom:24px;}
-.steps{display:flex;justify-content:center;flex-wrap:wrap;max-width:800px;margin:0 auto;}
-.step{flex:1;min-width:150px;max-width:200px;padding:14px 10px;position:relative;}
-.step-num{width:34px;height:34px;background:var(--dark);color:var(--text-on-dark);font-size:15px;font-weight:bold;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;border:2px solid var(--border);}
-.step h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin-bottom:4px;}
-.step p{font-size:10px;color:var(--light);line-height:1.5;}
-.step-arrow{position:absolute;right:-8px;top:24px;font-size:16px;color:var(--mid);}
+
 .nav-profile-btn{background:var(--bg);color:var(--dark);border:2px solid var(--bg);font-family:var(--font);font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:5px 12px;cursor:pointer;}
 .nav-profile-btn:hover{background:var(--light);}
 .form-group{margin-bottom:14px;}
@@ -63,7 +56,6 @@
 
 <main>
   <section class="hero">
-    <div class="hero-badge">⚔️ Fan-made · Free to play</div>
     <div class="hero-deco" id="heroSprites"></div>
     <h1>Draft Your Team.<br/><span>Conquer Every Region.</span></h1>
     <p>Build a team of 6, battle through every gym leader, Elite Four and Champion — from Kanto to Galar. How far can you go?</p>
@@ -95,15 +87,6 @@
     </div>
   </div>
 
-  <section class="how-section">
-    <h2>How It Works</h2>
-    <div class="steps">
-      <div class="step"><div class="step-num">1</div><h4>Choose Mode</h4><p>Kanto only or all 8 regions. Keep your team or redraft each gen.</p><div class="step-arrow">▶</div></div>
-      <div class="step"><div class="step-num">2</div><h4>Draft Team</h4><p>Pick 6 from random pools or type rolls. 3 rerolls to help.</p><div class="step-arrow">▶</div></div>
-      <div class="step"><div class="step-num">3</div><h4>Battle</h4><p>Your team auto-battles gyms, Elite Four and Champions.</p><div class="step-arrow">▶</div></div>
-      <div class="step"><div class="step-num">4</div><h4>Share</h4><p>Export your run as a PNG and show off your achievements.</p></div>
-    </div>
-  </section>
 </main>
 
 <footer>
