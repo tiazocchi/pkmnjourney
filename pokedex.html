@@ -17,9 +17,9 @@
 .progress-stats span{color:var(--text);font-weight:bold;}
 main{flex:1;padding:16px 20px;max-width:760px;margin:0 auto;width:100%;}
 .gen-section{margin-bottom:28px;}
-.gen-header{background:var(--dark);color:var(--bg);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border:2px solid var(--border);}
-.gen-title{font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;}
-.gen-count{font-size:10px;color:var(--light);}
+.gen-header{background:var(--dark);color:var(--text-on-dark);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border:2px solid var(--border);}
+.gen-title{font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;color:var(--text-on-dark);}
+.gen-count{font-size:10px;color:var(--accent);}
 .dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:4px;}
 .dex-card{background:var(--card);border:2px solid var(--border);padding:6px 4px;display:flex;flex-direction:column;align-items:center;min-height:90px;position:relative;}
 .dex-card.caught{background:var(--mid);}
@@ -54,7 +54,7 @@ main{flex:1;padding:16px 20px;max-width:760px;margin:0 auto;width:100%;}
 <nav></nav>
 
 <div class="dex-hero">
-  <h1>📖 Pokédex</h1>
+  <h1>Pokédex</h1>
   <p>Draft Pokémon in runs to catch them. Can you complete the Pokédex?</p>
 </div>
 
@@ -170,7 +170,7 @@ function render(){
 
     const header=document.createElement("div");
     header.className="gen-header";
-    header.innerHTML=`<div class="gen-title">Gen ${gen.id} — ${gen.name}</div><div class="gen-count">${gen.game} · ${genCaught}/${genTotal}</div>`;
+    header.innerHTML=`<div class="gen-title">Gen ${gen.id} — ${gen.name}</div><div class="gen-count">${genCaught}/${genTotal}</div>`;
     section.appendChild(header);
 
     const grid=document.createElement("div");
@@ -189,7 +189,7 @@ function render(){
         const spriteUrl=(showShiny&&isShiny)?shinySprite:normalSprite;
         card.innerHTML=`
           <div class="dex-num">#${id}</div>
-          ${isShiny?`<div class="shiny-badge">${showShiny?"✨":"⭐"}</div>`:""}
+          ${isShiny?`<div class="shiny-badge">${showShiny?"✨":"✨"}</div>`:""}
           <img class="dex-sprite" src="${spriteUrl}" alt="${data.name}" onerror="this.src='${normalSprite}'"/>
           <div class="dex-name">${data.name}</div>
           <div class="dex-types">
