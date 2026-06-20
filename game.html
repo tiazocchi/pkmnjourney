@@ -148,26 +148,53 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
     <div class="card-title">New Journey</div>
     <div class="card-sub">Configure your run</div>
     <div class="ad-slot">[ Ad Banner ]</div>
-    <div class="section-head">📍 Region</div>
+
+    <!-- REGION — single select, ALL runs every gen -->
+    <div class="section-head">Region</div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
-      <button class="region-toggle-btn all-btn active" onclick="selectRegion('all',this)">ALL</button>
-      <button class="region-toggle-btn" data-gen="1" onclick="selectRegion(1,this)">Kanto</button>
-      <button class="region-toggle-btn" data-gen="2" onclick="selectRegion(2,this)">Johto</button>
-      <button class="region-toggle-btn" data-gen="3" onclick="selectRegion(3,this)">Hoenn</button>
-      <button class="region-toggle-btn" data-gen="4" onclick="selectRegion(4,this)">Sinnoh</button>
-      <button class="region-toggle-btn" data-gen="5" onclick="selectRegion(5,this)">Unova</button>
-      <button class="region-toggle-btn" data-gen="6" onclick="selectRegion(6,this)">Kalos</button>
-      <button class="region-toggle-btn" data-gen="7" onclick="selectRegion(7,this)">Alola</button>
-      <button class="region-toggle-btn" data-gen="8" onclick="selectRegion(8,this)">Galar</button>
+      <button class="region-toggle-btn all-btn active" onclick="selectRegion('all',this)">🌍<br/><span>ALL</span></button>
+      <button class="region-toggle-btn" data-gen="1" onclick="selectRegion(1,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Kanto</span></button>
+      <button class="region-toggle-btn" data-gen="2" onclick="selectRegion(2,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/249.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Johto</span></button>
+      <button class="region-toggle-btn" data-gen="3" onclick="selectRegion(3,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/384.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Hoenn</span></button>
+      <button class="region-toggle-btn" data-gen="4" onclick="selectRegion(4,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/483.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Sinnoh</span></button>
+      <button class="region-toggle-btn" data-gen="5" onclick="selectRegion(5,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/643.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Unova</span></button>
+      <button class="region-toggle-btn" data-gen="6" onclick="selectRegion(6,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/716.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Kalos</span></button>
+      <button class="region-toggle-btn" data-gen="7" onclick="selectRegion(7,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/791.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Alola</span></button>
+      <button class="region-toggle-btn" data-gen="8" onclick="selectRegion(8,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/888.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Galar</span></button>
     </div>
+
+    <!-- DRAFT MODE — how the pool is generated each pick -->
+    <div class="section-head">Draft Mode</div>
+    <div class="opt selected" data-group="draft" data-val="random10" onclick="pick(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="https://raw.githubusercontent.com/msikma/pokesprite/master/items/ball/poke.png" style="width:32px;height:32px;image-rendering:pixelated;flex-shrink:0;" alt=""/>
+        <div><div class="opt-label"><span class="opt-prefix">▶</span>Random Pick</div><div class="opt-desc">6 random Pokémon weighted by rarity, pick 1</div></div>
+      </div>
+    </div>
+    <div class="opt" data-group="draft" data-val="typeroll" onclick="pick(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="https://raw.githubusercontent.com/msikma/pokesprite/master/items/ball/lure.png" style="width:32px;height:32px;image-rendering:pixelated;flex-shrink:0;" alt=""/>
+        <div><div class="opt-label"><span class="opt-prefix"> </span>Type Roll</div><div class="opt-desc">A gen + type is rolled — pick from all matching Pokémon</div></div>
+      </div>
+    </div>
+
+    <!-- TEAM MODE — only shown when ALL regions selected -->
     <div id="teamModeSection" style="display:none;">
-      <div class="section-head">👥 Team</div>
-      <div class="opt selected" data-group="team" data-val="same" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔒 Keep Same Team</span><div class="opt-desc">One team of 6 all the way</div></div>
-      <div class="opt" data-group="team" data-val="redraft" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🔄 Redraft Each Region</span><div class="opt-desc">Fresh draft before every region</div></div>
+      <div class="section-head">Team</div>
+      <div class="opt selected" data-group="team" data-val="same" onclick="pick(this)">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="https://raw.githubusercontent.com/msikma/pokesprite/master/items/ball/master.png" style="width:32px;height:32px;image-rendering:pixelated;flex-shrink:0;" alt=""/>
+          <div><div class="opt-label"><span class="opt-prefix">▶</span>Keep Same Team</div><div class="opt-desc">One team of 6 all the way</div></div>
+        </div>
+      </div>
+      <div class="opt" data-group="team" data-val="redraft" onclick="pick(this)">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="https://raw.githubusercontent.com/msikma/pokesprite/master/items/hold-item/choice-scarf.png" style="width:32px;height:32px;image-rendering:pixelated;flex-shrink:0;" alt=""/>
+          <div><div class="opt-label"><span class="opt-prefix"> </span>Redraft Each Region</div><div class="opt-desc">Fresh draft before every region</div></div>
+        </div>
+      </div>
     </div>
-    <div class="section-head">🎲 Draft Mode</div>
-    <div class="opt selected" data-group="draft" data-val="random10" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔀 Random Pick</span><div class="opt-desc">6 random Pokémon (1 per gen if all-gens), pick 1</div></div>
-    <div class="opt" data-group="draft" data-val="typeroll" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🎰 Type Roll</span><div class="opt-desc">A gen + type is rolled — pick from all matching Pokémon</div></div>
+
     <button class="btn btn-dark btn-full" onclick="goToDraft()" style="margin-top:16px;">▶ Start Draft</button>
   </div>
 </div>
