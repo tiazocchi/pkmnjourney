@@ -461,8 +461,12 @@ async function fetchData(url){const r=await fetch(url);if(r.ok)return r.json();r
 
 async function fetchMon(id){
   if(monCache[id])return monCache[id];
+  // Fetch pokemon and species in parallel — capture_rate lives on species endpoint
   const d=await fetchData(`${BASE}/pokemon/${id}`);
   if(!d)return null;
+  // Fetch species separately — some forms share species with base form
+  const speciesUrl=d.species?.url||`${BASE}/pokemon-species/${id}`;
+  const s=await fetchData(speciesUrl);
   const m={
     id:d.id,name:cap(d.name).replace(/-/g," "),
     type1:cap(d.types[0].type.name),
@@ -471,7 +475,7 @@ async function fetchMon(id){
     def:d.stats[2].base_stat, spa:d.stats[3].base_stat,
     spd:d.stats[4].base_stat, spe:d.stats[5].base_stat,
     baseTotal:d.stats.reduce((s,x)=>s+x.base_stat,0),
-    captureRate:d.capture_rate||45,
+    captureRate:s?s.capture_rate:45,
     sprite:d.sprites.front_default||SPRITE(id),
     spriteshiny:d.sprites.front_shiny||null,
   };
@@ -640,9 +644,12 @@ function showPoolState(state){
 // Minimum weight of 5 ensures even legendaries can appear occasionally
 function getWeight(id){
   const mon=monCache[id];
-  const rate=mon?mon.captureRate:45;
-  // Normalise by 255 — common pokemon ~1.0, legendaries ~0.01
-  return rate/255;
+  if(!mon) return 0.1; // uncached default — treat as uncommon
+  const rate=mon.captureRate||45;
+  const base=mon.baseTotal||400;
+  // Combine catch rate and BST — high BST reduces weight, high catch rate increases it
+  // A Caterpie (rate 255, BST 195) gets ~3.3x weight of Rayquaza (rate 45, BST 680)
+  return (rate/255) / (base/500);
 }
 
 function weightedSampleOne(ids){
@@ -732,14 +739,19 @@ function renderPool(mons){
         <span class="tag" style="background:${TC[p.type1]||'#888'}">${p.type1}</span>
         ${p.type2?`<span class="tag" style="background:${TC[p.type2]||'#888'}">${p.type2}</span>`:""}
         ${p.shiny?`<span class="tag" style="background:#c0a020">✨ Shiny</span>`:""}
+        <div style="font-size:7px;color:var(--light);margin-top:1px;">Weight: ${getWeight(p.id).toFixed(3)}</div>
       </div>
       <div class="mon-bst">BST ${p.baseTotal}${p.shiny?" (+10%)":""}</div>
       ${battleMode==="hard"?renderStatBars(p):""}`;
-    c.onclick=()=>pickMon(p);
-    grid.appendChild(c);
-  });
-}
+      c.onclick=()=>pickMon(p);
+      grid.appendChild(c);
+    });
+  }
+  // To check rarity
+  // <div style="font-size:7px;color:var(--light);margin-top:1px;">Catch rate: ${p.captureRate??'?'}</div>
+  // <div style="font-size:7px;color:var(--light);margin-top:1px;">Weight: ${getWeight(p.id).toFixed(3)}</div>
 
+  
 async function pickMon(mon){
   if(S.pickIdx>=6)return;
   S.team.push(mon);S.pickIdx++;
