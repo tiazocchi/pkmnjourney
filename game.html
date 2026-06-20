@@ -109,6 +109,17 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 .stat-lbl{font-size:8px;color:var(--accent);letter-spacing:1px;margin-top:2px;}
 .gen-result-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);}
 
+
+.region-toggle-btn{font-family:var(--font);font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px 6px;border:2px solid var(--border);background:var(--muted);color:var(--light);cursor:pointer;text-align:center;min-width:60px;}
+.region-toggle-btn.active{background:var(--dark);color:var(--text-on-dark);border-color:var(--accent);}
+
+/* ── Region tabs (journey screen) ── */
+.region-tabs{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:4px;}
+.region-tab{font-family:var(--font);font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:4px 10px;border:2px solid var(--border);background:var(--muted);color:var(--light);cursor:pointer;}
+.region-tab.active{background:var(--dark);color:var(--text-on-dark);border-color:var(--accent);}
+.region-tab.win{border-left:3px solid var(--win,#4caf50);}
+.region-tab.loss{border-left:3px solid var(--loss,#ef4444);}
+
 /* ── Achievements ── */
 .ach-badge{background:var(--dark);color:var(--text-on-dark);border:2px solid var(--accent);padding:5px 8px;font-size:10px;display:flex;align-items:center;gap:6px;}
 .achievement-list{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
@@ -1001,8 +1012,9 @@ function updateGenPills(){
   getGens().forEach((g,i)=>{
     const r=S.journeyResults[i];
     const pill=document.createElement("div");pill.className="gen-pill";
-    pill.style.background=r?(r.wins>=r.losses?"var(--dark)":"var(--mid)"):"var(--card)";
-    pill.style.color=r?"var(--bg)":"var(--mid)";
+    pill.style.background=r?(r.wins>=r.losses?"var(--dark)":"var(--muted)"):"var(--muted)";
+    pill.style.color=r?(r.wins>=r.losses?"var(--text-on-dark)":"var(--loss,#ef4444)"):"var(--light)";
+    pill.style.borderColor=r?(r.wins>=r.losses?"var(--accent)":"var(--loss,#ef4444)"):"var(--border)";
     pill.textContent=`Gen${g.id}${r?` ${r.wins}W/${r.losses}L`:""}`;
     pills.appendChild(pill);
   });
@@ -1011,7 +1023,7 @@ function updateGenPills(){
 function updateTotalScore(){
   const w=S.journeyResults.reduce((s,g)=>s+g.wins,0);
   const l=S.journeyResults.reduce((s,g)=>s+g.losses,0);
-  document.getElementById("totalScore").innerHTML=`Total: <span style="color:#4caf50">${w}W</span> / <span style="color:#ef5350">${l}L</span>`;
+  document.getElementById("totalScore").innerHTML=`Total: <span style="color:var(--win,#4caf50)">${w}W</span> / <span style="color:var(--loss,#ef4444)">${l}L</span>`;
 }
 
 // ═══════════════════════════════════════════════
@@ -1059,7 +1071,12 @@ function goToResults(){
   document.getElementById("resultMedal").textContent=medal;
   document.getElementById("resultRank").textContent=rank;
   renderTeamBar("resultsTeamBar",S.team);
-  document.getElementById("statGrid").innerHTML=[["Battles",total,"var(--bg)"],["Wins",w,"#4caf50"],["Losses",l,"#ef5350"],["Win %",pct+"%","var(--bg)"]].map(([l,v,c])=>`<div><div class="stat-val" style="color:${c}">${v}</div><div class="stat-lbl">${l}</div></div>`).join("");
+  document.getElementById("statGrid").innerHTML=[
+    ["Battles",total,"var(--text-on-dark)"],
+    ["Wins",w,"var(--win,#4caf50)"],
+    ["Losses",l,"var(--loss,#ef4444)"],
+    ["Win %",pct+"%","var(--text-on-dark)"]
+  ].map(([l,v,c])=>`<div class="stat-box-dark"><div class="stat-val" style="color:${c}">${v}</div><div class="stat-lbl">${l}</div></div>`).join("");
   // Gen breakdown with badges + trainer sprites
   const bd=document.getElementById("genBreakdown");bd.innerHTML="";
   S.journeyResults.forEach(r=>{
@@ -1074,7 +1091,7 @@ function goToResults(){
       <span>${won?"✅":"❌"}</span>
       <span style="flex:1;font-weight:bold;">Gen ${r.gen.id}: ${r.gen.name}</span>
       <span style="color:var(--mid);font-size:9px;">${r.gen.game}</span>
-      <span style="color:${won?"#4caf50":"#ef5350"};font-weight:bold;">${r.wins}W/${r.losses}L (${gp}%)</span>`;
+      <span style="color:${won?"var(--win,#4caf50)":"var(--loss,#ef4444)"};font-weight:bold;">${r.wins}W/${r.losses}L (${gp}%)</span>`;
     section.appendChild(header);
 
     // Gym badges row
@@ -1121,8 +1138,6 @@ function goToResults(){
     const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
     if(p){p.runs=(p.runs||0)+1;if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));}
   }catch(e){}
-  document.getElementById("sharePreview").style.display="none";
-  document.getElementById("downloadBtn").style.display="none";
 }
 
 // ═══════════════════════════════════════════════
