@@ -148,19 +148,19 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
     <div class="card-title">New Journey</div>
     <div class="card-sub">Configure your run</div>
     <div class="ad-slot">[ Ad Banner ]</div>
-    <div class="section-head">📍 Regions</div>
+    <div class="section-head">📍 Region</div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
-      <button class="region-toggle-btn all-btn active" onclick="toggleAllRegions()">ALL</button>
-      <button class="region-toggle-btn active" data-gen="1" onclick="toggleRegion(this)">Kanto</button>
-      <button class="region-toggle-btn active" data-gen="2" onclick="toggleRegion(this)">Johto</button>
-      <button class="region-toggle-btn active" data-gen="3" onclick="toggleRegion(this)">Hoenn</button>
-      <button class="region-toggle-btn active" data-gen="4" onclick="toggleRegion(this)">Sinnoh</button>
-      <button class="region-toggle-btn active" data-gen="5" onclick="toggleRegion(this)">Unova</button>
-      <button class="region-toggle-btn active" data-gen="6" onclick="toggleRegion(this)">Kalos</button>
-      <button class="region-toggle-btn active" data-gen="7" onclick="toggleRegion(this)">Alola</button>
-      <button class="region-toggle-btn active" data-gen="8" onclick="toggleRegion(this)">Galar</button>
+      <button class="region-toggle-btn all-btn active" onclick="selectRegion('all',this)">ALL</button>
+      <button class="region-toggle-btn" data-gen="1" onclick="selectRegion(1,this)">Kanto</button>
+      <button class="region-toggle-btn" data-gen="2" onclick="selectRegion(2,this)">Johto</button>
+      <button class="region-toggle-btn" data-gen="3" onclick="selectRegion(3,this)">Hoenn</button>
+      <button class="region-toggle-btn" data-gen="4" onclick="selectRegion(4,this)">Sinnoh</button>
+      <button class="region-toggle-btn" data-gen="5" onclick="selectRegion(5,this)">Unova</button>
+      <button class="region-toggle-btn" data-gen="6" onclick="selectRegion(6,this)">Kalos</button>
+      <button class="region-toggle-btn" data-gen="7" onclick="selectRegion(7,this)">Alola</button>
+      <button class="region-toggle-btn" data-gen="8" onclick="selectRegion(8,this)">Galar</button>
     </div>
-    <div id="teamModeSection">
+    <div id="teamModeSection" style="display:none;">
       <div class="section-head">👥 Team</div>
       <div class="opt selected" data-group="team" data-val="same" onclick="pick(this)"><span class="opt-prefix">▶</span><span class="opt-label">🔒 Keep Same Team</span><div class="opt-desc">One team of 6 all the way</div></div>
       <div class="opt" data-group="team" data-val="redraft" onclick="pick(this)"><span class="opt-prefix"> </span><span class="opt-label">🔄 Redraft Each Region</span><div class="opt-desc">Fresh draft before every region</div></div>
@@ -480,14 +480,14 @@ function applyShiny(mon){
 // STATE
 // ═══════════════════════════════════════════════
 let S={
-  selectedGens:new Set([1,2,3,4,5,6,7,8]),
+  selectedGens:"all",
   teamMode:"same",draftMode:"random10",
   team:[],pickIdx:0,rerolls:3,
   journeyResults:[],battleLog:[],
   regionLogs:[],activeRegionTab:0,
   unlockedAchs:[],draftModeUsed:"random10",
 };
-const getGens=()=>GENS.filter(g=>S.selectedGens.has(g.id));
+const getGens=()=>S.selectedGens==="all"?GENS:[GENS.find(g=>g.id===S.selectedGens)];
 
 // ═══════════════════════════════════════════════
 // SCREENS
@@ -510,15 +510,25 @@ function pick(el){
 }
 
 function goToSetup(){
-  S={selectedGens:new Set([1,2,3,4,5,6,7,8]),teamMode:"same",draftMode:"random10",team:[],pickIdx:0,rerolls:3,journeyResults:[],battleLog:[],regionLogs:[],activeRegionTab:0,unlockedAchs:[],draftModeUsed:"random10"};
-  document.querySelectorAll(".region-toggle-btn").forEach(b=>b.classList.add("active"));
-  updateAllBtn();
-  updateTeamModeVisibility();
-  document.querySelectorAll(".opt[data-group]").forEach(o=>{o.classList.remove("selected");o.querySelector(".opt-prefix").textContent=" ";});
-  document.querySelector(".opt[data-group='journey'][data-val='gen1']").classList.add("selected");document.querySelector(".opt[data-group='journey'][data-val='gen1'] .opt-prefix").textContent="▶";
-  document.querySelector(".opt[data-group='team'][data-val='same']").classList.add("selected");document.querySelector(".opt[data-group='team'][data-val='same'] .opt-prefix").textContent="▶";
-  document.querySelector(".opt[data-group='draft'][data-val='random10']").classList.add("selected");document.querySelector(".opt[data-group='draft'][data-val='random10'] .opt-prefix").textContent="▶";
-  document.getElementById("teamModeSection").style.display="none";
+  S={selectedGens:"all",teamMode:"same",draftMode:"random10",team:[],pickIdx:0,rerolls:3,journeyResults:[],battleLog:[],regionLogs:[],activeRegionTab:0,unlockedAchs:[],draftModeUsed:"random10"};
+  
+  // Reset region buttons — ALL active
+  document.querySelectorAll(".region-toggle-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelector(".all-btn").classList.add("active");
+  
+  // Show team mode since ALL is selected
+  document.getElementById("teamModeSection").style.display="block";
+  
+  // Reset opt selections
+  document.querySelectorAll(".opt[data-group]").forEach(o=>{
+    o.classList.remove("selected");
+    o.querySelector(".opt-prefix").textContent=" ";
+  });
+  document.querySelector(".opt[data-group='team'][data-val='same']").classList.add("selected");
+  document.querySelector(".opt[data-group='team'][data-val='same'] .opt-prefix").textContent="▶";
+  document.querySelector(".opt[data-group='draft'][data-val='random10']").classList.add("selected");
+  document.querySelector(".opt[data-group='draft'][data-val='random10'] .opt-prefix").textContent="▶";
+  
   showScreen("setup");
 }
 
@@ -561,6 +571,13 @@ function updateAllBtn(){
 
 function updateTeamModeVisibility(){
   document.getElementById("teamModeSection").style.display=S.selectedGens.size>1?"block":"none";
+}
+
+function selectRegion(val, btn){
+  S.selectedGens=val;
+  document.querySelectorAll(".region-toggle-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("teamModeSection").style.display=val==="all"?"block":"none";
 }
 
 async function goToDraft(){
