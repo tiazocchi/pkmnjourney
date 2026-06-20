@@ -126,8 +126,8 @@ function toggleShiny(){
     const img=card.querySelector(".dex-sprite");
     if(!img)return;
     img.src=showShiny&&data.shiny
-      ?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`
-      :(data.sprite||SPRITE_URL(id));
+        ?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`
+        :`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
     card.className=`dex-card${data.shiny&&showShiny?" shiny":" caught"}`;
   });
 }
@@ -184,15 +184,13 @@ function render(){
       card.dataset.id=id;
       card.className=`dex-card${caught?" caught":""}`;
       if(caught&&data){
-        // In shiny mode show shiny sprite if available, otherwise normal
-        const showingShiny=showShiny&&isShiny;
-        const spriteUrl=showingShiny
-          ?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`
-          :(data.sprite||SPRITE_URL(id));
+        const normalSprite=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+        const shinySprite=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
+        const spriteUrl=(showShiny&&isShiny)?shinySprite:normalSprite;
         card.innerHTML=`
           <div class="dex-num">#${id}</div>
           ${isShiny?`<div class="shiny-badge">${showShiny?"✨":"⭐"}</div>`:""}
-          <img class="dex-sprite" src="${spriteUrl}" alt="${data.name}" onerror="this.src='${SPRITE_URL(id)}'"/>
+          <img class="dex-sprite" src="${spriteUrl}" alt="${data.name}" onerror="this.src='${normalSprite}'"/>
           <div class="dex-name">${data.name}</div>
           <div class="dex-types">
             <span class="tag" style="background:${TC[data.type1]||'#888'}">${data.type1}</span>
