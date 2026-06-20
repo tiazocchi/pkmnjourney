@@ -64,15 +64,6 @@ main{flex:1;padding:16px;display:flex;flex-direction:column;align-items:center;g
 .mode-bullet-icon{flex-shrink:0;width:14px;}
 .mode-prefix{margin-right:4px;}
 
-.starters{display:flex;gap:8px;justify-content:center;margin-top:4px;}
-.starter-option{display:none;}
-.starter-label{border:3px solid var(--border);background:var(--muted);padding:8px 6px;cursor:pointer;text-align:center;flex:1;transition:all .1s;}
-.starter-label:hover{border-color:var(--accent);}
-.starter-option:checked+.starter-label{border-color:var(--accent);background:var(--dark);}
-.starter-option:checked+.starter-label .starter-name{color:var(--text-on-dark);}
-.starter-img{width:52px;height:52px;image-rendering:pixelated;display:block;margin:0 auto 4px;}
-.starter-name{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text);display:block;}
-
 /* No profile */
 .no-profile{text-align:center;padding:40px 20px;}
 .no-profile .big{font-size:48px;margin-bottom:12px;}
@@ -121,50 +112,11 @@ const ACHIEVEMENTS = [
 ];
 
 const THEMES = {
-  "Articuno": { desc:"Ice blue", preview:["#fcfcfd","#6aacf6","#005273"] },
-  "Zapdos":   { desc:"Electric gold", preview:["#fdfdfc","#ffd541","#d5ac08"] },
-  "Moltres":  { desc:"Fire orange", preview:["#fdfcfc","#ee6239","#d50808"] },
+  "Articuno": { desc:"Ice blue",      preview:["#6aacf6","#005273"] },
+  "Zapdos":   { desc:"Electric gold", preview:["#ffd541","#d5ac08"] },
+  "Moltres":  { desc:"Fire orange",   preview:["#ee6239","#d50808"] },
 };
 
-
-
-const BATTLE_MODES = [
-  {
-    id:"easy",
-    label:"Easy",
-    tag:"Recommended",
-    desc:"Each of your Pokémon battles its best matchup from the enemy team. Win probability is based on Base Stat Total (BST) and type effectiveness. Simple and fast.",
-    bullets:[
-      {icon:"⚔️", text:"Your 6 Pokémon fight enemy Pokémon one by one"},
-      {icon:"📊", text:"Win chance = your BST vs enemy BST + type advantage"},
-      {icon:"🎯", text:"Best type matchup from your team is chosen automatically"},
-      {icon:"💪", text:"Having 6 vs 2 Pokémon gives you a big numerical advantage"},
-      {icon:"✅", text:"Great for learning the game and casual runs"},
-    ]
-  },
-  {
-    id:"hard",
-    label:"Hard",
-    tag:"Advanced",
-    desc:"A full Pokémon-by-Pokémon simulation. Each matchup uses individual stats: Attack vs Defense, Sp.Atk vs Sp.Def, Speed decides who strikes first, and HP determines durability.",
-    bullets:[
-      {icon:"⚔️", text:"Your 6 Pokémon fight enemy Pokémon one by one"},
-      {icon:"📊", text:"Win chance = Attack vs Defense OR Sp.Atk vs Sp.Def (best channel)"},
-      {icon:"⚡", text:"Speed: faster Pokémon gets a strike-first bonus (+10%)"},
-      {icon:"❤️", text:"HP durability: how many hits you survive affects outcome"},
-      {icon:"🧠", text:"Team composition and individual stats really matter"},
-      {icon:"🎯", text:"A glass cannon can lose to a defensive wall even with type advantage"},
-    ]
-  },
-];
-
-function getBattleMode(){
-  return localStorage.getItem("pkmnjourney_battlemode")||"easy";
-}
-function setBattleMode(m){
-  localStorage.setItem("pkmnjourney_battlemode",m);
-  renderBattleModeSection();
-}
 
 function formatDate(ts){
   if(!ts)return"";
@@ -247,8 +199,9 @@ function saveProfile(){
   const errEl=document.getElementById("usernameError");
   if(!name){errEl.style.display="block";return;}
   errEl.style.display="none";
-  const starter=document.querySelector('input[name="starter"]:checked').value;
-  const profile={name,starter,runs:0,bestWinPct:null,achievements:[],created:Date.now()};
+  // Generate unique 6-digit Trainer ID like the games
+  const trainerId=String(Math.floor(Math.random()*999999)).padStart(6,"0");
+  const profile={name,trainerId,runs:0,bestWinPct:null,achievements:[],created:Date.now()};
   localStorage.setItem("pkmnjourney_profile",JSON.stringify(profile));
   pkmnUpdateNav();
   render();
@@ -269,42 +222,25 @@ function render(){
           <input class="form-input" type="text" id="usernameInput" maxlength="16" placeholder="Enter your name…" autocomplete="off"/>
           <div class="form-error" id="usernameError">Please enter a trainer name.</div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Choose Your Starter</label>
-          <div class="starters">
-            <input type="radio" name="starter" id="s1" value="1" class="starter-option" checked/>
-            <label for="s1" class="starter-label">
-              <img class="starter-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="Bulbasaur"/>
-              <span class="starter-name">Bulbasaur</span>
-            </label>
-            <input type="radio" name="starter" id="s4" value="4" class="starter-option"/>
-            <label for="s4" class="starter-label">
-              <img class="starter-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="Charmander"/>
-              <span class="starter-name">Charmander</span>
-            </label>
-            <input type="radio" name="starter" id="s7" value="7" class="starter-option"/>
-            <label for="s7" class="starter-label">
-              <img class="starter-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="Squirtle"/>
-              <span class="starter-name">Squirtle</span>
-            </label>
-          </div>
-        </div>
           <button class="btn btn-accent btn-full" onclick="saveProfile()">▶ Create Profile</button>
         </div>
         <div class="card">
           <div class="card-title">Settings</div>
           <div class="card-sub">Preferences are saved even without a profile</div>
-          <div class="section-head">🎨 Theme</div>
+          <div class="section-head" style="display:flex;align-items:center;gap:6px;">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/235.png" style="width:20px;height:20px;image-rendering:pixelated;"/>
+            Theme
+          </div>
           <div class="theme-grid" id="themeGrid"></div>
-          <div class="section-head">⚔️ Battle Mode</div>
-          <div class="card-sub" style="text-align:left;margin-bottom:8px;">Choose how battles are calculated. Takes effect on your next run.</div>
-          <div id="battleModeSection"></div>
+          <div class="section-head">🧪 Test Mode</div>
+          <div class="card-sub" style="text-align:left;margin-bottom:8px;">Uses simplified battle simulation. For testing only.</div>
+          <div id="testModeSection"></div>
           <div class="section-head">💀 Hardcore Mode</div>
           <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss ends your run. Takes effect on your next run.</div>
           <div id="hardcoreSection"></div>
         </div>`;
     renderThemeSection();
-    renderBattleModeSection();
+    renderTestModeSection();
     renderHardcoreSection(); // always render hardcore toggle
     return;
   }
@@ -318,12 +254,13 @@ function render(){
     <!-- PROFILE HERO -->
     <div class="card">
       <div class="profile-hero">
-        <img class="profile-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.starter}.png"
-          alt="" onerror="this.style.opacity=0"/>
+        <div style="background:var(--dark);border:2px solid var(--accent);padding:12px 16px;text-align:center;flex-shrink:0;">
+          <div style="font-size:8px;color:var(--accent);letter-spacing:2px;margin-bottom:4px;">TRAINER ID</div>
+          <div style="font-size:22px;font-weight:bold;color:var(--text-on-dark);letter-spacing:3px;">#${p.trainerId||"000000"}</div>
+        </div>
         <div class="profile-info">
           <div class="profile-name">${escHtml(p.name)}</div>
-          <div class="profile-starter">Starter: ${STARTER_NAMES[p.starter]||"Unknown"}</div>
-          <div class="profile-joined">Trainer since ${formatDate(p.created)}</div>
+          <div class="profile-joined">Joined ${formatDate(p.created)}</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <a href="game.html" class="btn btn-dark">▶ Play</a>
@@ -345,9 +282,9 @@ function render(){
       <div class="card-sub">Your preferences are saved locally</div>
       <div class="section-head">🎨 Theme</div>
       <div class="theme-grid" id="themeGrid"></div>
-      <div class="section-head">⚔️ Battle Mode</div>
-      <div class="card-sub" style="text-align:left;margin-bottom:8px;">Choose how battles are calculated. Takes effect on your next run.</div>
-      <div id="battleModeSection"></div>
+      <div class="section-head">🧪 Test Mode</div>
+      <div class="card-sub" style="text-align:left;margin-bottom:8px;">Uses simplified simulation. Results won't count toward stats.</div>
+      <div id="testModeSectionNoProfile"></div>
       <div class="section-head">💀 Hardcore Mode</div>
       <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss ends your run. Takes effect on your next run.</div>
       <div id="hardcoreSectionNoProfile"></div>
@@ -371,7 +308,7 @@ function render(){
     </div>`;
 
   renderThemeSection();
-  renderBattleModeSection();
+  renderTestModeSection();
   renderHardcoreSection();
 
   // Render achievements
@@ -429,6 +366,40 @@ function renderHardcoreSection(){
           <div class="mode-bullet"><span class="mode-bullet-icon">🏆</span><span>Results are saved up to the point of defeat</span></div>
           <div class="mode-bullet"><span class="mode-bullet-icon">⚠️</span><span>Draft carefully — type matchups are critical</span></div>
         </div>
+      </div>`;
+  });
+}
+
+// ── Test Mode ──────────────────────────────────────────
+// Dev-only toggle — uses Easy simulation instead of Hard
+// Hidden under a plain label so players don't think it's a real option
+
+function getTestMode(){
+  return localStorage.getItem("pkmnjourney_testmode")==="true";
+}
+
+function toggleTestMode(){
+  const cur=getTestMode();
+  localStorage.setItem("pkmnjourney_testmode",String(!cur));
+  renderTestModeSection();
+}
+
+function renderTestModeSection(){
+  const on=getTestMode();
+  ["testModeSection","testModeSectionNoProfile"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML=`
+      <div class="mode-card${on?" selected":""}" onclick="toggleTestMode()">
+        <div class="mode-header">
+          <span class="mode-prefix">${on?"▶":" "}</span>
+          <span class="mode-title">${on?"Test Mode ON":"Test Mode OFF"}</span>
+          <span class="mode-tag">${on?"🧪 Active":"Off"}</span>
+        </div>
+        <div class="mode-desc">${on
+          ?"Using simplified Easy simulation. Results do not count toward profile stats."
+          :"Normal Hard simulation active."
+        }</div>
       </div>`;
   });
 }

@@ -242,7 +242,7 @@ const TRAINER_SPRITES = {
   // Gen 2
   "Will":"will","Koga":"koga","Karen":"karen",
   // Gen 3
-  "Sidney":"sidney","Phoebe":"phoebe","Glacia":"glacia","Drake":"drake","Steven":"steven",
+  "Sidney":"sidney","Phoebe":"phoebe-gen3","Glacia":"glacia","Drake":"drake-gen3","Steven":"steven",
   // Gen 4
   "Aaron":"aaron","Bertha":"bertha","Flint":"flint","Lucian":"lucian","Cynthia":"cynthia",
   // Gen 5

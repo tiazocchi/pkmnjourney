@@ -299,25 +299,7 @@ const TRAINER = n=>`https://play.pokemonshowdown.com/sprites/trainers/${n}.png`;
 // ═══════════════════════════════════════════════
 // BATTLE MODE
 // ═══════════════════════════════════════════════
-let battleMode = localStorage.getItem("pkmnjourney_battlemode")||"easy";
-function openSettings(){ pkmnOpenSettings(); }
-function closeSettings(){ pkmnCloseSettings(); }
 
-function setBattleMode(m){
-  battleMode=m;
-  localStorage.setItem("pkmnjourney_battlemode",m);
-  renderBattleModeOpts();
-}
-
-function renderBattleModeOpts(){
-  ["easy","hard"].forEach(m=>{
-    const el=document.getElementById(`bm-${m}`);
-    const pr=document.getElementById(`bm-${m}-p`);
-    if(!el||!pr) return;
-    if(m===battleMode){el.classList.add("selected");pr.textContent="▶";}
-    else{el.classList.remove("selected");pr.textContent=" ";}
-  });
-}
 
 // ═══════════════════════════════════════════════
 // BATTLE SIMULATION
@@ -456,8 +438,10 @@ function winRoll(raw){
   return{result:"loss",margin:"decisive"};
 }
 
+// Always use Hard simulation — Easy kept for dev testing only
 function simulate(myTeam, enemyTrainer){
-  return battleMode==="hard"?simulateHard(myTeam,enemyTrainer):simulateEasy(myTeam,enemyTrainer);
+  const testMode=localStorage.getItem("pkmnjourney_testmode")==="true";
+  return testMode?simulateEasy(myTeam,enemyTrainer):simulateHard(myTeam,enemyTrainer);
 }
 
 // ═══════════════════════════════════════════════
@@ -753,7 +737,7 @@ function renderPool(mons){
         <div style="font-size:7px;color:var(--light);margin-top:1px;">Weight: ${getWeight(p.id).toFixed(3)}</div>
       </div>
       <div class="mon-bst">BST ${p.baseTotal}${p.shiny?" (+10%)":""}</div>
-      ${battleMode==="hard"?renderStatBars(p):""}`;
+      ${renderStatBars(p)}`;
       c.onclick=()=>pickMon(p);
       grid.appendChild(c);
     });
@@ -1110,6 +1094,16 @@ function goToResults(){
         badgeRow.appendChild(wrap);
       });
       section.appendChild(badgeRow);
+
+      try{
+        const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
+        const testMode=localStorage.getItem("pkmnjourney_testmode")==="true";
+        if(p&&!testMode){
+          p.runs=(p.runs||0)+1;
+          if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;
+          localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));
+        }
+      }catch(e){}
     }
 
     // Elite Four + Champion trainer sprites
@@ -1191,7 +1185,6 @@ function downloadCard(){
 // Init
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderBattleModeOpts();
   pkmnInjectNav("game");
 });
 </script>
