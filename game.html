@@ -253,17 +253,6 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
     <div class="team-bar-wrap"><div class="team-bar" id="resultsTeamBar"></div></div>
     <div class="stat-grid" id="statGrid"></div>
     <div id="genBreakdown"></div>
-    <div id="achSection" style="display:none;">
-      <div class="section-head">🏅 Achievements Unlocked</div>
-      <div class="achievement-list" id="achList"></div>
-    </div>
-    <div class="section-head">📤 Share Your Run</div>
-    <canvas id="shareCanvas" style="display:none;"></canvas>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-dark" onclick="generateShareCard()">🖼 Generate Card</button>
-      <button class="btn btn-outline" id="downloadBtn" style="display:none;" onclick="downloadCard()">⬇ Download PNG</button>
-    </div>
-    <img id="sharePreview" style="display:none;width:100%;margin-top:10px;border:2px solid var(--border);" alt="Share card"/>
     <div style="display:flex;gap:8px;margin-top:14px;">
       <button class="btn btn-dark" onclick="goToSetup()">▶ Play Again</button>
       <button class="btn btn-outline" onclick="showScreen('journey')">◀ Battle Log</button>
@@ -685,21 +674,15 @@ async function generatePool(){
     let mons=[];
     if(S.draftMode==="random10"){
       let ids=[];
+      // Always pick 6 from the full available pool, weighted by capture rate
+      // In single region: pool is that gen's range
+      // In ALL mode: pool is full 898
       const gens=getGens();
-      if(gens.length===1){
-        const g=gens[0];
-        const all=Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0]).filter(i=>!usedIds.has(i));
-        await Promise.all(all.map(fetchMon));
-        ids=weightedSample(all,6);
-      } else {
-        for(const g of gens){
-          const all=Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0]).filter(i=>!usedIds.has(i));
-          if(all.length){
-            await Promise.all(all.map(fetchMon));
-            ids.push(weightedSampleOne(all));
-          }
-        }
-      }
+      const all=gens.flatMap(g=>
+        Array.from({length:g.range[1]-g.range[0]+1},(_,i)=>i+g.range[0])
+      ).filter(i=>!usedIds.has(i));
+      await Promise.all(all.map(fetchMon));
+      ids=weightedSample(all,6);
       mons=ids.map(id=>monCache[id]).filter(Boolean);
     } else {
       const availGens=getGens();
@@ -1083,15 +1066,6 @@ function goToResults(){
     bd.appendChild(section);
   });
 
-  // Achievements with item sprites
-  if(S.unlockedAchs.length>0){
-    document.getElementById("achSection").style.display="block";
-    document.getElementById("achList").innerHTML=S.unlockedAchs.map(a=>`
-      <div class="ach-badge">
-        <img src="${ITEM(a.item)}" style="width:20px;height:20px;image-rendering:pixelated;" onerror="this.style.display='none'"/>
-        ${a.name}
-      </div>`).join("");
-  }
   try{
     const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
     if(p){p.runs=(p.runs||0)+1;if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));}
