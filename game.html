@@ -408,7 +408,10 @@ function simulateHard(myTeam, enemyTrainer){
     const durability=Math.min(mine.hp/enOffence, 3);
     const speedBonus=mine.spe>enemy.spe?1.1:0.9;
     const statPenalty=bst(mine)<bst(enemy)?Math.pow(bst(mine)/bst(enemy),3):1;
-    const raw=Math.max(offence,0)*typeScore*durability*speedBonus/350*statPenalty;
+    // Normalize so two equal Pokémon = ~50% win chance
+    // Floor offence at 30 so high SpD walls don't zero out good attackers
+    const effectiveOffence=Math.max(offence, 30);
+    const raw=effectiveOffence*typeScore*durability*speedBonus/225*statPenalty;
     const fatigueAdj=raw-(myFatigue*0.10)+(enFatigue*0.10);
     const finalWp=Math.max(.04,Math.min(.96,fatigueAdj));
     const res=winRoll(finalWp);
