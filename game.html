@@ -475,6 +475,7 @@ async function fetchMon(id){
     spd:d.stats[4].base_stat, spe:d.stats[5].base_stat,
     baseTotal:d.stats.reduce((s,x)=>s+x.base_stat,0),
     captureRate:s?s.capture_rate:45,
+    isLegendary:s?(s.is_legendary||s.is_mythical):false,
     sprite:d.sprites.front_default||SPRITE(id),
     spriteshiny:d.sprites.front_shiny||null,
   };
@@ -1018,32 +1019,36 @@ function updateTotalScore(){
 // ACHIEVEMENTS
 // ═══════════════════════════════════════════════
 function checkAchievements(){
+  // Get all-time dex and shiny counts for Pokédex/shiny achievements
+  const dex=JSON.parse(localStorage.getItem("pkmnjourney_pokedex")||"{}");
+  const dexCount=Object.keys(dex).length;
+  const shinyCount=Object.values(dex).filter(p=>p.shiny).length;
+
   ACHIEVEMENTS.forEach(ach=>{
     if(S.unlockedAchs.find(a=>a.id===ach.id))return;
-    try{if(ach.check(S.team,S.journeyResults,S.draftModeUsed)){S.unlockedAchs.push(ach);showToast(ach);saveAchToProfile(ach);}}catch(e){}
+    try{
+      if(ach.check(S.team,S.journeyResults,S.draftModeUsed,dexCount,shinyCount)){
+        S.unlockedAchs.push(ach);
+        showToast(ach);
+        saveAchToProfile(ach);
+      }
+    }catch(e){}
   });
 }
 
 function showToast(ach){
   const c=document.getElementById("toast-container");
   const t=document.createElement("div");t.className="toast";
+  const imgSrc=ach.badgeId
+    ?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/${ach.badgeId}.png`
+    :`https://raw.githubusercontent.com/msikma/pokesprite/master/items/${ach.item}.png`;
   t.innerHTML=`
     <div style="display:flex;align-items:center;gap:8px;">
-      <img src="${ITEM(ach.item)}" style="width:24px;height:24px;image-rendering:pixelated;" onerror="this.style.display='none'"/>
-      <div><div class="toast-title">${ach.name}</div><div class="toast-desc">${ach.desc}</div></div>
+      <img src="${imgSrc}" style="width:24px;height:24px;image-rendering:pixelated;" onerror="this.style.display='none'"/>
+      <div><div class="toast-title">${ach.hidden?"???":ach.name}</div><div class="toast-desc">${ach.hidden?"???":ach.desc}</div></div>
     </div>`;
   c.appendChild(t);
   setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .5s";setTimeout(()=>t.remove(),500);},4000);
-}
-
-function saveAchToProfile(ach){
-  try{
-    const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
-    if(!p)return;
-    if(!p.achievements)p.achievements=[];
-    if(!p.achievements.find(a=>a.id===ach.id))p.achievements.push({id:ach.id,date:Date.now()});
-    localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));
-  }catch(e){}
 }
 
 // ═══════════════════════════════════════════════

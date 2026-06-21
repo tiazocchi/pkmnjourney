@@ -91,6 +91,7 @@ main{flex:1;padding:16px;display:flex;flex-direction:column;align-items:center;g
   <div style="margin-top:8px;"><a href="#">Privacy Policy</a> · <a href="#">Contact</a></div>
 </footer>
 
+<script src="data.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -99,21 +100,6 @@ main{flex:1;padding:16px;display:flex;flex-direction:column;align-items:center;g
 <script>
 const ITEM_URL = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
 
-const ACHIEVEMENTS = [
-  {id:"lord_skies",   item:"sharp-beak",      name:"Lord of the Skies",    desc:"Complete a run with a full Flying-type team"},
-  {id:"eternal_flame",item:"fire-stone",       name:"Eternal Flame",        desc:"Complete a run with a full Fire-type team"},
-  {id:"tide_turner",  item:"water-stone",      name:"Tide Turner",          desc:"Complete a run with a full Water-type team"},
-  {id:"shadow_realm", item:"spell-tag",        name:"Shadow Realm",         desc:"Complete a run with a full Ghost-type team"},
-  {id:"thunder_god",  item:"thunder-stone",    name:"Thunder God",          desc:"Complete a run with a full Electric-type team"},
-  {id:"frozen_throne",item:"never-melt-ice",   name:"Frozen Throne",        desc:"Complete a run with a full Ice-type team"},
-  {id:"dragon_master",item:"dragon-scale",     name:"Dragon Master",        desc:"Complete a run with a full Dragon-type team"},
-  {id:"engineered",   item:"master-ball",      name:"Perfectly Engineered", desc:"Win with an average BST over 500"},
-  {id:"flawless",     item:"gold-bottle-cap",  name:"Flawless Champion",    desc:"Zero losses across the entire run"},
-  {id:"rock_solid",   item:"hard-stone",       name:"Rock Solid",           desc:"Complete a run despite 5+ losses"},
-  {id:"dark_horse",   item:"dusk-stone",       name:"Dark Horse",           desc:"Win a region with avg BST under 380"},
-  {id:"world_tour",   item:"exp-share",        name:"World Traveller",      desc:"Complete all 8 regions"},
-  {id:"fates_champ",  item:"destiny-knot",     name:"Fate's Champion",      desc:"Complete a full run using only Type Roll draft"},
-];
 
 const THEMES = {
   "Articuno": { desc:"Ice blue",      preview:["#6aacf6","#005273"] },
@@ -129,20 +115,29 @@ function formatDate(ts){
 
 async function deleteProfile(){
   if(!confirm("Delete your trainer profile? All progress will be lost."))return;
-  const uid=window.pkmnCurrentUser?.uid;
-  if(uid){
+  const user=window.pkmnCurrentUser;
+  if(user){
     try{
-      // Delete all Firestore docs
+      // Delete Firestore data first
       await Promise.all([
-        _db.doc(`users/${uid}/data/profile`).delete(),
-        _db.doc(`users/${uid}/data/pokedex`).delete(),
-        _db.doc(`users/${uid}/data/settings`).delete(),
+        _db.doc(`users/${user.uid}/data/profile`).delete(),
+        _db.doc(`users/${user.uid}/data/pokedex`).delete(),
+        _db.doc(`users/${user.uid}/data/settings`).delete(),
       ]);
-      await pkmnSignOut();
-    } catch(e){ console.warn(e); }
+      // Delete Firebase Auth account — must be done while user is signed in
+      await user.delete();
+    } catch(e){
+      // If delete fails due to session expiry, sign out anyway
+      console.warn("Delete error:", e);
+      if(e.code==="auth/requires-recent-login"){
+        alert("For security, please log out and log back in before deleting your account.");
+        return;
+      }
+    }
   }
   localStorage.removeItem("pkmnjourney_profile");
   localStorage.removeItem("pkmnjourney_pokedex");
+  window.pkmnCurrentUser=null;
   pkmnUpdateNav();
   render();
 }
@@ -179,34 +174,6 @@ function renderThemeSection() {
     <span style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:var(--text);">Dark Mode</span>
     <button onclick="pkmnToggleDark()" style="font-family:var(--font);font-size:11px;font-weight:bold;padding:4px 14px;border:2px solid var(--border);background:var(--dark);color:var(--text-on-dark);cursor:pointer;text-transform:uppercase;letter-spacing:1px;">${isDark ? "☀ Light" : "☾ Dark"}</button>`;
   container.appendChild(toggle);
-}
-
-// ── Battle mode section ────────────────────────────────
-function renderBattleModeSection(){
-  const cur=getBattleMode();
-  const container=document.getElementById("battleModeSection");
-  if(!container)return;
-  container.innerHTML="";
-  BATTLE_MODES.forEach(m=>{
-    const card=document.createElement("div");
-    card.className="mode-card"+(m.id===cur?" selected":"");
-    card.innerHTML=`
-      <div class="mode-header">
-        <span class="mode-prefix">${m.id===cur?"▶":" "}</span>
-        <span class="mode-title">${m.label}</span>
-        <span class="mode-tag">${m.tag}</span>
-      </div>
-      <div class="mode-desc">${m.desc}</div>
-      <div class="mode-bullets">
-        ${m.bullets.map(b=>`
-          <div class="mode-bullet">
-            <span class="mode-bullet-icon">${b.icon}</span>
-            <span>${b.text}</span>
-          </div>`).join("")}
-      </div>`;
-    card.onclick=()=>setBattleMode(m.id);
-    container.appendChild(card);
-  });
 }
 
 function switchAuthTab(tab){
@@ -290,7 +257,7 @@ function render(){
   } else {
     const unlockedIds=new Set((p.achievements||[]).map(a=>a.id));
     const unlockedCount=unlockedIds.size;
-    const totalAch=ACHIEVEMENTS.length;
+    const totalAch=ACHIEVEMENTS_TOTAL;
     const bestWin=p.bestWinPct!==null?p.bestWinPct+"%":"—";
     authHtml=`
       <div class="card">
@@ -364,22 +331,32 @@ function render(){
 
   // Render achievements if logged in
   if(p){
+    const unlockedIds=new Set((p.achievements||[]).map(a=>a.id));
     const grid=document.getElementById("achGrid");
     ACHIEVEMENTS.forEach(ach=>{
-      const unlockedIds=new Set((p.achievements||[]).map(a=>a.id));
-      const unlocked=unlockedIds.has(ach.id);
-      const entry=unlocked?(p.achievements||[]).find(a=>a.id===ach.id):null;
-      const div=document.createElement("div");
-      div.className=`ach-card ${unlocked?"unlocked":"locked"}`;
-      div.innerHTML=`
-        <img class="ach-item" src="${ITEM_URL(ach.item)}" alt="" onerror="this.style.opacity=0"/>
-        <div>
-          <div class="ach-name">${ach.name}</div>
-          <div class="ach-desc">${ach.desc}</div>
-          ${unlocked&&entry?`<div class="ach-date">Unlocked ${formatDate(entry.date)}</div>`:""}
-        </div>`;
-      grid.appendChild(div);
-    });
+    const unlocked=unlockedIds.has(ach.id);
+    const entry=unlocked?(p.achievements||[]).find(a=>a.id===ach.id):null;
+    const div=document.createElement("div");
+    div.className=`ach-card ${unlocked?"unlocked":"locked"}`;
+
+    // Hidden achievements show as ??? until unlocked
+    const showName=(!ach.hidden||unlocked)?ach.name:"???";
+    const showDesc=(!ach.hidden||unlocked)?ach.desc:"???";
+
+    // Badge achievements use PokeAPI badge sprites, others use pokesprite items
+    const imgSrc=ach.badgeId
+      ?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/badges/${ach.badgeId}.png`
+      :`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${ach.item}.png`;
+
+    div.innerHTML=`
+      <img class="ach-item" src="${imgSrc}" alt="" onerror="this.style.opacity=0"/>
+      <div>
+        <div class="ach-name">${showName}</div>
+        <div class="ach-desc">${showDesc}</div>
+        ${unlocked&&entry?`<div class="ach-date">Unlocked ${formatDate(entry.date)}</div>`:""}
+      </div>`;
+    grid.appendChild(div);
+  });
   }
 }
 

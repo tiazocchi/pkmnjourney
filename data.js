@@ -191,21 +191,69 @@ const GENS=[
 
 const TYPE_CHART={Normal:{Rock:.5,Ghost:0,Steel:.5},Fire:{Fire:.5,Water:.5,Rock:.5,Dragon:.5,Grass:2,Ice:2,Bug:2,Steel:2},Water:{Water:.5,Grass:.5,Dragon:.5,Fire:2,Ground:2,Rock:2},Grass:{Fire:.5,Grass:.5,Poison:.5,Flying:.5,Bug:.5,Dragon:.5,Steel:.5,Water:2,Ground:2,Rock:2},Electric:{Grass:.5,Electric:.5,Dragon:.5,Ground:0,Flying:2,Water:2},Ice:{Water:.5,Ice:.5,Steel:.5,Fire:.5,Grass:2,Ground:2,Flying:2,Dragon:2},Fighting:{Poison:.5,Bug:.5,Psychic:.5,Flying:.5,Fairy:.5,Ghost:0,Normal:2,Ice:2,Rock:2,Dark:2,Steel:2},Poison:{Poison:.5,Ground:.5,Rock:.5,Ghost:.5,Steel:0,Grass:2,Fairy:2},Ground:{Grass:.5,Bug:.5,Flying:0,Fire:2,Electric:2,Poison:2,Rock:2,Steel:2},Flying:{Electric:.5,Rock:.5,Steel:.5,Grass:2,Fighting:2,Bug:2},Psychic:{Psychic:.5,Steel:.5,Dark:0,Fighting:2,Poison:2},Bug:{Fire:.5,Fighting:.5,Flying:.5,Ghost:.5,Steel:.5,Fairy:.5,Grass:2,Psychic:2,Dark:2},Rock:{Fighting:.5,Ground:.5,Steel:.5,Fire:2,Ice:2,Flying:2,Bug:2},Ghost:{Normal:0,Dark:.5,Psychic:2,Ghost:2},Dragon:{Steel:.5,Fairy:0,Dragon:2},Dark:{Fighting:.5,Dark:.5,Fairy:.5,Psychic:2,Ghost:2},Steel:{Fire:.5,Water:.5,Electric:.5,Steel:.5,Ice:2,Rock:2,Fairy:2},Fairy:{Fire:.5,Poison:.5,Steel:.5,Fighting:2,Dragon:2,Dark:2}};
 
+// ── Helpers used in achievement checks ────────────────
+// Check if all gyms in a region result were won
+const _allGymsWon = r => r.battles.filter(b=>b.stage==="gym").every(b=>b.result==="win");
+// Check if all elite 4 in a region were won
+const _allE4Won = r => r.battles.filter(b=>b.stage==="elite4").every(b=>b.result==="win");
+// Check if the champion in a region was beaten
+const _champWon = r => r.battles.filter(b=>b.stage==="champion").every(b=>b.result==="win");
+
 const ACHIEVEMENTS=[
-  {id:"lord_skies",   item:"sharp-beak",       name:"Lord of the Skies",    desc:"Full Flying-type team",      check:(t,r)=>t.every(p=>p.type1==="Flying"||p.type2==="Flying")},
-  {id:"eternal_flame",item:"fire-stone",        name:"Eternal Flame",        desc:"Full Fire-type team",        check:(t,r)=>t.every(p=>p.type1==="Fire"||p.type2==="Fire")},
-  {id:"tide_turner",  item:"water-stone",       name:"Tide Turner",          desc:"Full Water-type team",       check:(t,r)=>t.every(p=>p.type1==="Water"||p.type2==="Water")},
-  {id:"shadow_realm", item:"spell-tag",         name:"Shadow Realm",         desc:"Full Ghost-type team",       check:(t,r)=>t.every(p=>p.type1==="Ghost"||p.type2==="Ghost")},
-  {id:"thunder_god",  item:"thunder-stone",     name:"Thunder God",          desc:"Full Electric-type team",    check:(t,r)=>t.every(p=>p.type1==="Electric"||p.type2==="Electric")},
-  {id:"frozen_throne",item:"never-melt-ice",    name:"Frozen Throne",        desc:"Full Ice-type team",         check:(t,r)=>t.every(p=>p.type1==="Ice"||p.type2==="Ice")},
-  {id:"dragon_master",item:"dragon-scale",      name:"Dragon Master",        desc:"Full Dragon-type team",      check:(t,r)=>t.every(p=>p.type1==="Dragon"||p.type2==="Dragon")},
-  {id:"engineered",   item:"master-ball",       name:"Perfectly Engineered", desc:"Avg BST over 500",           check:(t,r)=>t.reduce((s,p)=>s+p.baseTotal,0)/t.length>500},
-  {id:"flawless",     item:"gold-bottle-cap",   name:"Flawless Champion",    desc:"Zero losses in the run",     check:(t,r)=>r.reduce((s,g)=>s+g.losses,0)===0},
-  {id:"rock_solid",   item:"hard-stone",        name:"Rock Solid",           desc:"Win despite 5+ losses",      check:(t,r)=>r.reduce((s,g)=>s+g.losses,0)>=5&&r.reduce((s,g)=>s+g.wins,0)>r.reduce((s,g)=>s+g.losses,0)},
-  {id:"dark_horse",   item:"dusk-stone",        name:"Dark Horse",           desc:"Win with avg BST under 380", check:(t,r)=>t.reduce((s,p)=>s+p.baseTotal,0)/t.length<380&&r.some(g=>g.wins>g.losses)},
-  {id:"world_tour",   item:"exp-share",         name:"World Traveller",      desc:"Complete all 8 regions",     check:(t,r)=>r.length===8},
-  {id:"fates_champ",  item:"destiny-knot",      name:"Fate's Champion",      desc:"Full run with Type Roll",    check:(t,r,m)=>m==="typeroll"&&r.length>0},
+
+  // ── Type team achievements ─────────────────────────
+  {id:"lord_skies",   item:"sharp-beak",       name:"Lord of the Skies",    desc:"Draft a full Flying-type team",      hidden:false, check:(t,r)=>r.length>0&&t.every(p=>p.type1==="Flying"||p.type2==="Flying")},
+  {id:"eternal_flame",item:"fire-stone",        name:"Eternal Flame",        desc:"Draft a full Fire-type team",        hidden:false, check:(t,r)=>r.length>0&&t.every(p=>p.type1==="Fire"||p.type2==="Fire")},
+  {id:"tide_turner",  item:"water-stone",       name:"Tide Turner",          desc:"Draft a full Water-type team",       hidden:false, check:(t,r)=>r.length>0&&t.every(p=>p.type1==="Water"||p.type2==="Water")},
+  {id:"shadow_realm", item:"spell-tag",         name:"Shadow Realm",         desc:"Draft a full Ghost-type team",       hidden:false, check:(t,r)=>r.length>0&&t.every(p=>p.type1==="Ghost"||p.type2==="Ghost")},
+  {id:"thunder_god",  item:"thunder-stone",     name:"Thunder God",          desc:"Draft a full Electric-type team",    hidden:false, check:(t,r)=>r.length>0&&t.every(p=>p.type1==="Electric"||p.type2==="Electric")},
+  {id:"frozen_throne",item:"never-melt-ice",    name:"Frozen Throne",        desc:"Draft a full Ice-type team",         hidden:false, check:(t,r)=>r.length>0&&t.every(p=>p.type1==="Ice"||p.type2==="Ice")},
+  {id:"dragon_master",item:"dragon-scale",      name:"Dragon Master",        desc:"Draft a full Dragon-type team",      hidden:false, check:(t,r)=>r.length>0&&t.every(p=>p.type1==="Dragon"||p.type2==="Dragon")},
+
+  // ── Stat achievements ──────────────────────────────
+  {id:"engineered",   item:"master-ball",       name:"Perfectly Engineered", desc:"Draft a team with avg BST over 500",  hidden:false, check:(t,r)=>r.length>0&&t.reduce((s,p)=>s+p.baseTotal,0)/t.length>500},
+  {id:"dark_horse",   item:"dusk-stone",        name:"Dark Horse",           desc:"Beat a region with avg BST under 380",hidden:false, check:(t,r)=>t.reduce((s,p)=>s+p.baseTotal,0)/t.length<380&&r.some(g=>_champWon(g))},
+  {id:"flawless",     item:"gold-bottle-cap",   name:"Flawless Champion",    desc:"Complete a run with zero losses",     hidden:false, check:(t,r)=>r.length>0&&r.reduce((s,g)=>s+g.losses,0)===0},
+  {id:"rock_solid",   item:"hard-stone",        name:"Rock Solid",           desc:"Beat a champion despite 5+ losses",   hidden:false, check:(t,r)=>r.reduce((s,g)=>s+g.losses,0)>=5&&r.some(g=>_champWon(g))},
+  {id:"fates_champ",  item:"destiny-knot",      name:"Fate's Champion",      desc:"Complete a full run using Type Roll",  hidden:false, check:(t,r,m)=>m==="typeroll"&&r.length===8&&r.every(g=>_champWon(g))},
+
+  // ── Per-region Champion achievements (single run) ──
+  // item is a PokeAPI badge number (used differently from pokesprite items)
+  {id:"champ_kanto",  badgeId:8,  name:"Kanto Champion",  desc:"Beat the Kanto champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===1&&_champWon(g))},
+  {id:"champ_johto",  badgeId:16, name:"Johto Champion",  desc:"Beat the Johto champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===2&&_champWon(g))},
+  {id:"champ_hoenn",  badgeId:24, name:"Hoenn Champion",  desc:"Beat the Hoenn champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===3&&_champWon(g))},
+  {id:"champ_sinnoh", badgeId:32, name:"Sinnoh Champion", desc:"Beat the Sinnoh champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===4&&_champWon(g))},
+  {id:"champ_unova",  badgeId:40, name:"Unova Champion",  desc:"Beat the Unova champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===5&&_champWon(g))},
+  {id:"champ_kalos",  badgeId:48, name:"Kalos Champion",  desc:"Beat the Kalos champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===6&&_champWon(g))},
+  {id:"champ_alola",  badgeId:null,name:"Alola Champion", desc:"Beat the Alola champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===7&&_champWon(g))},
+  {id:"champ_galar",  badgeId:64, name:"Galar Champion",  desc:"Beat the Galar champion in a single run",  hidden:false, check:(t,r)=>r.some(g=>g.gen.id===8&&_champWon(g))},
+
+  // ── Cross-region achievements (ALL run) ───────────
+  {id:"gym_legend",   item:"key-item/vs-recorder",  name:"Gym Legend",      desc:"Win every gym across all 8 regions in one run",          hidden:false, check:(t,r)=>r.length===8&&r.every(g=>_allGymsWon(g))},
+  {id:"elite_master", item:"hold-item/kings-rock",  name:"Elite Master",    desc:"Win every Elite 4 battle across all 8 regions in one run",hidden:false, check:(t,r)=>r.length===8&&r.every(g=>_allE4Won(g))},
+  {id:"world_tour",   item:"key-item/exp-share",    name:"World Traveller", desc:"Beat every champion across all 8 regions in one run",    hidden:false, check:(t,r)=>r.length===8&&r.every(g=>_champWon(g))},
+  {id:"loyal_team",   item:"ball/master",            name:"Loyal Bond",      desc:"Beat all 8 champions in one run keeping the same team",  hidden:false, check:(t,r,m)=>r.length===8&&r.every(g=>_champWon(g))&&m==="same"},
+  {id:"fresh_start",  item:"hold-item/choice-scarf", name:"Fresh Start",    desc:"Beat all 8 champions in one run redrafting each region", hidden:false, check:(t,r,m)=>r.length===8&&r.every(g=>_champWon(g))&&m==="redraft"},
+
+  // ── Pokédex achievements (all-time, checked via profile) ──
+  // These are checked differently — in profile, not in game
+  // check() receives (team, results, draftMode, dexCount)
+  {id:"first_catch",  item:"ball/poke",              name:"First Catch",     desc:"Catch your first Pokémon",             hidden:false, check:(t,r,m,dex)=>dex>=1},
+  {id:"collector",    item:"ball/great",             name:"Collector",       desc:"Catch 50 different Pokémon",           hidden:false, check:(t,r,m,dex)=>dex>=50},
+  {id:"kanto_dex",    item:"ball/ultra",             name:"Kanto Complete",  desc:"Catch all 151 Kanto Pokémon",          hidden:false, check:(t,r,m,dex)=>dex>=151},
+  {id:"half_dex",     item:"ball/dusk",              name:"Halfway There",   desc:"Catch 500 different Pokémon",          hidden:false, check:(t,r,m,dex)=>dex>=500},
+  {id:"full_dex",     item:"ball/master",            name:"Pokédex Complete",desc:"Catch all 898 Pokémon",                hidden:false, check:(t,r,m,dex)=>dex>=898},
+
+  // ── Shiny achievements ─────────────────────────────
+  {id:"shiny_first",  item:"hold-item/kings-rock",   name:"A Gleam of Light",desc:"Find your first shiny Pokémon in a pool",hidden:false, check:(t,r,m,dex,shinies)=>shinies>=1},
+  {id:"shiny_draft",  item:"hold-item/scope-lens",   name:"Shiny Hunter",   desc:"Draft a shiny Pokémon into your team",   hidden:false, check:(t,r)=>t.some(p=>p.shiny)},
+  {id:"shiny_five",   item:"hold-item/lucky-egg",    name:"Fortune Favours", desc:"Find 5 shinies across all your runs",   hidden:false, check:(t,r,m,dex,shinies)=>shinies>=5},
+  // Hidden — draft a shiny legendary
+  {id:"shiny_legend", item:"hold-item/light-clay",   name:"???",             desc:"???",                                    hidden:true,  check:(t,r)=>t.some(p=>p.shiny&&p.isLegendary)},
 ];
+
+// Total non-hidden achievements (for profile display)
+const ACHIEVEMENTS_TOTAL = ACHIEVEMENTS.filter(a=>!a.hidden).length;
 
 // ── Badge & Sprite mappings ──────────────────────────
 const GYM_BADGES = {
