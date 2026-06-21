@@ -193,11 +193,20 @@ const TYPE_CHART={Normal:{Rock:.5,Ghost:0,Steel:.5},Fire:{Fire:.5,Water:.5,Rock:
 
 // ── Helpers used in achievement checks ────────────────
 // Check if all gyms in a region result were won
-const _allGymsWon = r => r.battles.filter(b=>b.stage==="gym").every(b=>b.result==="win");
+const _allGymsWon = r => {
+  const gyms = r.battles.filter(b=>b.stage==="gym");
+  return gyms.length > 0 && gyms.every(b=>b.result==="win");
+};
 // Check if all elite 4 in a region were won
-const _allE4Won = r => r.battles.filter(b=>b.stage==="elite4").every(b=>b.result==="win");
+const _allE4Won = r => {
+  const e4 = r.battles.filter(b=>b.stage==="elite4");
+  return e4.length > 0 && e4.every(b=>b.result==="win");
+};
 // Check if the champion in a region was beaten
-const _champWon = r => r.battles.filter(b=>b.stage==="champion").every(b=>b.result==="win");
+const _champWon = r => {
+  const champ = r.battles.filter(b=>b.stage==="champion");
+  return champ.length > 0 && champ.every(b=>b.result==="win");
+};
 
 const ACHIEVEMENTS=[
 

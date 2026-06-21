@@ -257,9 +257,8 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 <div class="screen" id="screen-results">
   <div class="card">
     <div style="text-align:center;margin-bottom:12px;">
-      <div style="font-size:44px;" id="resultMedal"></div>
-      <div class="card-title" id="resultRank"></div>
-      <div class="card-sub">Journey Complete — pkmnjourney.com</div>
+      <div class="card-title">Journey Complete</div>
+      <div class="card-sub">pkmnjourney.com</div>
     </div>
     <div class="team-bar-wrap"><div class="team-bar" id="resultsTeamBar"></div></div>
     <div class="stat-grid" id="statGrid"></div>
@@ -1036,8 +1035,11 @@ function checkAchievements(){
   const dexCount=Object.keys(dex).length;
   const shinyCount=Object.values(dex).filter(p=>p.shiny).length;
 
+  // Load already-unlocked achievements from profile to avoid re-triggering
+  const profileAchs=new Set(JSON.parse(localStorage.getItem("pkmnjourney_profile")||"{}").achievements?.map(a=>a.id)||[]);
   ACHIEVEMENTS.forEach(ach=>{
     if(S.unlockedAchs.find(a=>a.id===ach.id))return;
+    if(profileAchs.has(ach.id))return; // already unlocked in a previous run
     try{
       if(ach.check(S.team,S.journeyResults,S.draftModeUsed,dexCount,shinyCount,localStorage.getItem("pkmnjourney_battlemode")||"normal")){
         S.unlockedAchs.push(ach);
@@ -1071,10 +1073,9 @@ function goToResults(){
   const w=S.journeyResults.reduce((s,g)=>s+g.wins,0);
   const l=S.journeyResults.reduce((s,g)=>s+g.losses,0);
   const total=w+l;const pct=total>0?Math.round((w/total)*100):0;
-  const rank=pct>=90?"CHAMPION":pct>=70?"ELITE TRAINER":pct>=50?"GYM CHALLENGER":"ROOKIE";
-  const medal=pct>=90?"🏆":pct>=70?"🥈":pct>=50?"🎖":"📜";
-  document.getElementById("resultMedal").textContent=medal;
-  document.getElementById("resultRank").textContent=rank;
+  checkAchievements();
+  document.getElementById("resultMedal").textContent="";
+  document.getElementById("resultRank").textContent="Journey Complete";
   renderTeamBar("resultsTeamBar",S.team);
   document.getElementById("statGrid").innerHTML=[
     ["Battles",total,"var(--text-on-dark)"],
@@ -1114,19 +1115,8 @@ function goToResults(){
           :`<span style="font-size:18px;">🏅</span>`;
         badgeRow.appendChild(wrap);
       });
-      section.appendChild(badgeRow);
-
-      try{
-        const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
-        const testMode=localStorage.getItem("pkmnjourney_testmode")==="true";
-        if(p&&!testMode){
-          p.runs=(p.runs||0)+1;
-          if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;
-          pkmnSaveProfile(p); // syncs to Firestore if logged in
-        }
-      }catch(e){}
+      section.appendChild(badgeRow); 
     }
-
     // Elite Four + Champion trainer sprites
     const e4andChamp=r.battles.filter(b=>b.stage==="elite4"||b.stage==="champion");
     if(e4andChamp.length){
