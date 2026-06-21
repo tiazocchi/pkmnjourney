@@ -273,6 +273,10 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 
 <div id="toast-container"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
 <script src="data.js"></script>
 <script src="shared.js"></script>
 <script>
@@ -759,7 +763,7 @@ function saveCaught(mon){
     const raw=localStorage.getItem("pkmnjourney_pokedex");
     const dex=raw?JSON.parse(raw):{};
     if(!dex[mon.id])dex[mon.id]={id:mon.id,name:mon.name,type1:mon.type1,type2:mon.type2,baseTotal:mon.baseTotal,sprite:mon.shiny?(mon.spriteshiny||mon.sprite):mon.sprite,shiny:mon.shiny||false,caughtAt:Date.now()};
-    localStorage.setItem("pkmnjourney_pokedex",JSON.stringify(dex));
+    pkmnSavePokedex(dex); // replaces direct localStorage call — handles both local + Firestore
   }catch(e){}
 }
 
@@ -1101,7 +1105,7 @@ function goToResults(){
         if(p&&!testMode){
           p.runs=(p.runs||0)+1;
           if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;
-          localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));
+          pkmnSaveProfile(p); // syncs to Firestore if logged in
         }
       }catch(e){}
     }

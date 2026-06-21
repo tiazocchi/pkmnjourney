@@ -91,6 +91,10 @@ main{flex:1;padding:16px;display:flex;flex-direction:column;align-items:center;g
   <div style="margin-top:8px;"><a href="#">Privacy Policy</a> · <a href="#">Contact</a></div>
 </footer>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase.js"></script>
 <script src="shared.js"></script>
 <script>
 const ITEM_URL = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
@@ -123,11 +127,22 @@ function formatDate(ts){
   return new Date(ts).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 }
 
-function deleteProfile(){
+async function deleteProfile(){
   if(!confirm("Delete your trainer profile? All progress will be lost."))return;
+  const uid=window.pkmnCurrentUser?.uid;
+  if(uid){
+    try{
+      // Delete all Firestore docs
+      await Promise.all([
+        _db.doc(`users/${uid}/data/profile`).delete(),
+        _db.doc(`users/${uid}/data/pokedex`).delete(),
+        _db.doc(`users/${uid}/data/settings`).delete(),
+      ]);
+      await pkmnSignOut();
+    } catch(e){ console.warn(e); }
+  }
   localStorage.removeItem("pkmnjourney_profile");
   localStorage.removeItem("pkmnjourney_pokedex");
-  localStorage.removeItem("pkmnjourney_battlemode");
   pkmnUpdateNav();
   render();
 }
@@ -194,17 +209,31 @@ function renderBattleModeSection(){
   });
 }
 
-function saveProfile(){
+function switchAuthTab(tab){
+  const isLogin = tab === "login";
+  document.getElementById("formLogin").style.display = isLogin ? "block" : "none";
+  document.getElementById("formCreate").style.display = isLogin ? "none" : "block";
+  document.getElementById("tabLogin").style.background = isLogin ? "var(--dark)" : "var(--muted)";
+  document.getElementById("tabLogin").style.color = isLogin ? "var(--text-on-dark)" : "var(--light)";
+  document.getElementById("tabCreate").style.background = isLogin ? "var(--muted)" : "var(--dark)";
+  document.getElementById("tabCreate").style.color = isLogin ? "var(--light)" : "var(--text-on-dark)";
+}
+
+async function saveProfile(){
   const name=document.getElementById("usernameInput").value.trim();
   const errEl=document.getElementById("usernameError");
   if(!name){errEl.style.display="block";return;}
   errEl.style.display="none";
-  // Generate unique 6-digit Trainer ID like the games
-  const trainerId=String(Math.floor(Math.random()*999999)).padStart(6,"0");
-  const profile={name,trainerId,runs:0,bestWinPct:null,achievements:[],created:Date.now()};
-  localStorage.setItem("pkmnjourney_profile",JSON.stringify(profile));
-  pkmnUpdateNav();
-  render();
+  const email=document.getElementById("emailInput").value.trim();
+  const password=document.getElementById("passwordInput").value;
+  try {
+    await pkmnSignUp(email, password, name);
+    pkmnUpdateNav();
+    render();
+  } catch(e) {
+    errEl.textContent=e.message;
+    errEl.style.display="block";
+  }
 }
 
 // ── Main render ────────────────────────────────────────
@@ -212,121 +241,146 @@ function render(){
   const main=document.getElementById("main");
   const p=pkmnGetProfile();
 
+  // Auth/profile card — changes based on login state
+  let authHtml="";
   if(!p){
-    main.innerHTML=`
+    authHtml=`
       <div class="card">
-        <div class="card-title">Create Trainer</div>
-        <div class="card-sub">Saved locally on your device. Tracks your stats and achievements.</div>
-        <div class="form-group">
-          <label class="form-label" for="usernameInput">Trainer Name</label>
-          <input class="form-input" type="text" id="usernameInput" maxlength="16" placeholder="Enter your name…" autocomplete="off"/>
-          <div class="form-error" id="usernameError">Please enter a trainer name.</div>
+        <div class="card-title">PkmnJourney</div>
+        <div class="card-sub">Sign in or create an account to save your progress across devices.</div>
+        <div style="display:flex;gap:0;margin-bottom:16px;border:2px solid var(--border);">
+          <button id="tabLogin" onclick="switchAuthTab('login')"
+            style="flex:1;font-family:var(--font);font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px;border:none;cursor:pointer;background:var(--dark);color:var(--text-on-dark);">
+            Log In
+          </button>
+          <button id="tabCreate" onclick="switchAuthTab('create')"
+            style="flex:1;font-family:var(--font);font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px;border:none;cursor:pointer;background:var(--muted);color:var(--light);">
+            Create Account
+          </button>
         </div>
-          <button class="btn btn-accent btn-full" onclick="saveProfile()">▶ Create Profile</button>
-        </div>
-        <div class="card">
-          <div class="card-title">Settings</div>
-          <div class="card-sub">Preferences are saved even without a profile</div>
-          <div class="section-head" style="display:flex;align-items:center;gap:6px;">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/235.png" style="width:20px;height:20px;image-rendering:pixelated;"/>
-            Theme
+        <div id="formLogin">
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">Email</label>
+            <input class="form-input" type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email"/>
           </div>
-          <div class="theme-grid" id="themeGrid"></div>
-          <div class="section-head">🧪 Test Mode</div>
-          <div class="card-sub" style="text-align:left;margin-bottom:8px;">Uses simplified battle simulation. For testing only.</div>
-          <div id="testModeSection"></div>
-          <div class="section-head">💀 Hardcore Mode</div>
-          <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss ends your run. Takes effect on your next run.</div>
-          <div id="hardcoreSection"></div>
-        </div>`;
-    renderThemeSection();
-    renderTestModeSection();
-    renderHardcoreSection(); // always render hardcore toggle
-    return;
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Password</label>
+            <input class="form-input" type="password" id="loginPassword" placeholder="Password" autocomplete="current-password"/>
+            <div class="form-error" id="loginError"></div>
+          </div>
+          <button class="btn btn-dark btn-full" onclick="doLogin()">▶ Log In</button>
+        </div>
+        <div id="formCreate" style="display:none;">
+          <div class="form-group">
+            <label class="form-label" for="usernameInput">Trainer Name</label>
+            <input class="form-input" type="text" id="usernameInput" maxlength="16" placeholder="Enter your name…" autocomplete="off"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="emailInput">Email</label>
+            <input class="form-input" type="email" id="emailInput" placeholder="your@email.com" autocomplete="email"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="passwordInput">Password</label>
+            <input class="form-input" type="password" id="passwordInput" placeholder="Min 6 characters" autocomplete="new-password"/>
+            <div class="form-error" id="usernameError"></div>
+          </div>
+          <button class="btn btn-accent btn-full" onclick="saveProfile()">▶ Create Account</button>
+        </div>
+      </div>`;
+  } else {
+    const unlockedIds=new Set((p.achievements||[]).map(a=>a.id));
+    const unlockedCount=unlockedIds.size;
+    const totalAch=ACHIEVEMENTS.length;
+    const bestWin=p.bestWinPct!==null?p.bestWinPct+"%":"—";
+    authHtml=`
+      <div class="card">
+        <div class="profile-hero">
+          <div style="background:var(--dark);border:2px solid var(--accent);padding:12px 16px;text-align:center;flex-shrink:0;">
+            <div style="font-size:8px;color:var(--accent);letter-spacing:2px;margin-bottom:4px;">TRAINER ID</div>
+            <div style="font-size:22px;font-weight:bold;color:var(--text-on-dark);letter-spacing:3px;">#${p.trainerId||"000000"}</div>
+          </div>
+          <div class="profile-info">
+            <div class="profile-name">${escHtml(p.name)}</div>
+            <div class="profile-joined">Joined ${formatDate(p.created)}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <a href="game.html" class="btn btn-dark">▶ Play</a>
+            <button class="btn btn-outline" onclick="pkmnSignOut()">↩ Log Out</button>
+            <button class="btn btn-danger" onclick="deleteProfile()">✕ Delete</button>
+          </div>
+        </div>
+        <div class="section-head">📊 Career Stats</div>
+        <div class="stat-grid-profile">
+          <div class="stat-box"><div class="stat-val">${p.runs||0}</div><div class="stat-lbl">Runs</div></div>
+          <div class="stat-box"><div class="stat-val">${bestWin}</div><div class="stat-lbl">Best Win %</div></div>
+          <div class="stat-box"><div class="stat-val">${unlockedCount}</div><div class="stat-lbl">Achievements</div></div>
+          <div class="stat-box"><div class="stat-val">${totalAch}</div><div class="stat-lbl">Total</div></div>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS -->
+      <div class="card">
+        <div class="card-title">Achievements</div>
+        <div class="card-sub">${unlockedCount} of ${totalAch} unlocked</div>
+        <div style="background:var(--mid);border:2px solid var(--border);height:14px;margin-bottom:14px;">
+          <div style="background:var(--dark);height:100%;width:${Math.round((unlockedCount/totalAch)*100)}%;transition:width .4s;"></div>
+        </div>
+        <div class="ach-grid" id="achGrid"></div>
+      </div>`;
   }
 
-  const unlockedIds=new Set((p.achievements||[]).map(a=>a.id));
-  const unlockedCount=unlockedIds.size;
-  const totalAch=ACHIEVEMENTS.length;
-  const bestWin=p.bestWinPct!==null?p.bestWinPct+"%":"—";
-
-  main.innerHTML=`
-    <!-- PROFILE HERO -->
-    <div class="card">
-      <div class="profile-hero">
-        <div style="background:var(--dark);border:2px solid var(--accent);padding:12px 16px;text-align:center;flex-shrink:0;">
-          <div style="font-size:8px;color:var(--accent);letter-spacing:2px;margin-bottom:4px;">TRAINER ID</div>
-          <div style="font-size:22px;font-weight:bold;color:var(--text-on-dark);letter-spacing:3px;">#${p.trainerId||"000000"}</div>
-        </div>
-        <div class="profile-info">
-          <div class="profile-name">${escHtml(p.name)}</div>
-          <div class="profile-joined">Joined ${formatDate(p.created)}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <a href="game.html" class="btn btn-dark">▶ Play</a>
-          <button class="btn btn-danger" onclick="deleteProfile()">✕ Delete</button>
-        </div>
-      </div>
-      <div class="section-head">📊 Career Stats</div>
-      <div class="stat-grid-profile">
-        <div class="stat-box"><div class="stat-val">${p.runs||0}</div><div class="stat-lbl">Runs</div></div>
-        <div class="stat-box"><div class="stat-val">${bestWin}</div><div class="stat-lbl">Best Win %</div></div>
-        <div class="stat-box"><div class="stat-val">${unlockedCount}</div><div class="stat-lbl">Achievements</div></div>
-        <div class="stat-box"><div class="stat-val">${totalAch}</div><div class="stat-lbl">Total</div></div>
-      </div>
-    </div>
-
-    <!-- SETTINGS -->
+  // Settings card — always the same regardless of auth state
+  const settingsHtml=`
     <div class="card">
       <div class="card-title">Settings</div>
-      <div class="card-sub">Your preferences are saved locally</div>
-      <div class="section-head">🎨 Theme</div>
+      <div class="card-sub">Preferences are saved locally.</div>
+      <div class="section-head" style="display:flex;align-items:center;gap:6px;">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/235.png" style="width:20px;height:20px;image-rendering:pixelated;"/>
+        Theme
+      </div>
       <div class="theme-grid" id="themeGrid"></div>
       <div class="section-head">🧪 Test Mode</div>
       <div class="card-sub" style="text-align:left;margin-bottom:8px;">Uses simplified simulation. Results won't count toward stats.</div>
-      <div id="testModeSectionNoProfile"></div>
+      <div id="testModeSection"></div>
       <div class="section-head">💀 Hardcore Mode</div>
       <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss ends your run. Takes effect on your next run.</div>
-      <div id="hardcoreSectionNoProfile"></div>
-    </div>
+      <div id="hardcoreSection"></div>
+    </div>`;
 
-    <!-- AD -->
+  // Ad
+  const adHtml=`
     <div style="width:100%;max-width:700px;">
       <div class="ad-banner" style="border:2px solid #333;">
         <div class="ad-slot">[ Advertisement ]</div>
       </div>
-    </div>
-
-    <!-- ACHIEVEMENTS -->
-    <div class="card">
-      <div class="card-title">Achievements</div>
-      <div class="card-sub">${unlockedCount} of ${totalAch} unlocked</div>
-      <div style="background:var(--mid);border:2px solid var(--border);height:14px;margin-bottom:14px;">
-        <div style="background:var(--dark);height:100%;width:${Math.round((unlockedCount/totalAch)*100)}%;transition:width .4s;"></div>
-      </div>
-      <div class="ach-grid" id="achGrid"></div>
     </div>`;
 
+  main.innerHTML = authHtml + adHtml + settingsHtml;
+
+  // Always render these — single set of IDs now
   renderThemeSection();
   renderTestModeSection();
   renderHardcoreSection();
 
-  // Render achievements
-  const grid=document.getElementById("achGrid");
-  ACHIEVEMENTS.forEach(ach=>{
-    const unlocked=unlockedIds.has(ach.id);
-    const entry=unlocked?(p.achievements||[]).find(a=>a.id===ach.id):null;
-    const div=document.createElement("div");
-    div.className=`ach-card ${unlocked?"unlocked":"locked"}`;
-    div.innerHTML=`
-      <img class="ach-item" src="${ITEM_URL(ach.item)}" alt="" onerror="this.style.opacity=0"/>
-      <div>
-        <div class="ach-name">${ach.name}</div>
-        <div class="ach-desc">${ach.desc}</div>
-        ${unlocked&&entry?`<div class="ach-date">Unlocked ${formatDate(entry.date)}</div>`:""}
-      </div>`;
-    grid.appendChild(div);
-  });
+  // Render achievements if logged in
+  if(p){
+    const grid=document.getElementById("achGrid");
+    ACHIEVEMENTS.forEach(ach=>{
+      const unlockedIds=new Set((p.achievements||[]).map(a=>a.id));
+      const unlocked=unlockedIds.has(ach.id);
+      const entry=unlocked?(p.achievements||[]).find(a=>a.id===ach.id):null;
+      const div=document.createElement("div");
+      div.className=`ach-card ${unlocked?"unlocked":"locked"}`;
+      div.innerHTML=`
+        <img class="ach-item" src="${ITEM_URL(ach.item)}" alt="" onerror="this.style.opacity=0"/>
+        <div>
+          <div class="ach-name">${ach.name}</div>
+          <div class="ach-desc">${ach.desc}</div>
+          ${unlocked&&entry?`<div class="ach-date">Unlocked ${formatDate(entry.date)}</div>`:""}
+        </div>`;
+      grid.appendChild(div);
+    });
+  }
 }
 
 
@@ -347,7 +401,7 @@ function toggleHardcoreMode(){
 function renderHardcoreSection(){
   const on=getHardcoreMode();
   // Render into both profile view and no-profile view containers
-  ["hardcoreSection","hardcoreSectionNoProfile"].forEach(id=>{
+  ["hardcoreSection"].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
     el.innerHTML=`
@@ -378,6 +432,18 @@ function getTestMode(){
   return localStorage.getItem("pkmnjourney_testmode")==="true";
 }
 
+async function doLogin(){
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const errEl=document.getElementById("loginError");
+  try{
+    await pkmnSignIn(email,password);
+  } catch(e){
+    errEl.textContent=e.message;
+    errEl.style.display="block";
+  }
+}
+
 function toggleTestMode(){
   const cur=getTestMode();
   localStorage.setItem("pkmnjourney_testmode",String(!cur));
@@ -386,7 +452,7 @@ function toggleTestMode(){
 
 function renderTestModeSection(){
   const on=getTestMode();
-  ["testModeSection","testModeSectionNoProfile"].forEach(id=>{
+  ["testModeSection"].forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
     el.innerHTML=`
