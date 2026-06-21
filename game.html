@@ -442,10 +442,10 @@ function winRoll(raw){
   return{result:"loss",margin:"decisive"};
 }
 
-// Always use Hard simulation — Easy kept for dev testing only
+// Normal = BST + type, Hard = detailed stats + type
 function simulate(myTeam, enemyTrainer){
-  const testMode=localStorage.getItem("pkmnjourney_testmode")==="true";
-  return testMode?simulateEasy(myTeam,enemyTrainer):simulateHard(myTeam,enemyTrainer);
+  const mode=localStorage.getItem("pkmnjourney_battlemode")||"normal";
+  return mode==="hard"?simulateHard(myTeam,enemyTrainer):simulateEasy(myTeam,enemyTrainer);
 }
 
 // ═══════════════════════════════════════════════
@@ -822,7 +822,7 @@ async function runGens(startIdx){
         genRes.losses++;
 
         // ── Hardcore mode: end run immediately on any loss ──
-        if(localStorage.getItem("pkmnjourney_hardcore")==="true"){
+        if(localStorage.getItem("pkmnjourney_testmode")!=="true"){
           // Append the losing battle row first
           S.battleLog.push(entry);
           appendBattleRow(entry);
@@ -1139,7 +1139,12 @@ function goToResults(){
 
   try{
     const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
-    if(p){p.runs=(p.runs||0)+1;if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;localStorage.setItem("pkmnjourney_profile",JSON.stringify(p));}
+    const testMode=localStorage.getItem("pkmnjourney_testmode")==="true";
+    if(p&&!testMode){
+      p.runs=(p.runs||0)+1;
+      if(p.bestWinPct===null||pct>p.bestWinPct)p.bestWinPct=pct;
+      pkmnSaveProfile(p);
+    }
   }catch(e){}
 }
 

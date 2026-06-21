@@ -309,9 +309,9 @@ function render(){
       <div class="section-head">🧪 Test Mode</div>
       <div class="card-sub" style="text-align:left;margin-bottom:8px;">Uses simplified simulation. Results won't count toward stats.</div>
       <div id="testModeSection"></div>
-      <div class="section-head">💀 Hardcore Mode</div>
-      <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss ends your run. Takes effect on your next run.</div>
-      <div id="hardcoreSection"></div>
+      <div class="section-head">⚔️ Battle Mode</div>
+      <div class="card-sub" style="text-align:left;margin-bottom:8px;">One loss always ends your run. Choose how battles are calculated.</div>
+      <div id="battleModeSection"></div>
     </div>`;
 
   // Ad
@@ -326,8 +326,8 @@ function render(){
 
   // Always render these — single set of IDs now
   renderThemeSection();
+  renderBattleModeSection();
   renderTestModeSection();
-  renderHardcoreSection();
 
   // Render achievements if logged in
   if(p){
@@ -361,43 +361,64 @@ function render(){
 }
 
 
-// ── Hardcore Mode ──────────────────────────────────────
-// Stored in localStorage as "pkmnjourney_hardcore" = "true"/"false"
-// Independent of profile — works even without one
+// ── Battle Mode ────────────────────────────────────────
+// Normal = BST + type, Hard = detailed stats + type
+// One loss always ends the run — except in Test Mode
 
-function getHardcoreMode(){
-  return localStorage.getItem("pkmnjourney_hardcore")==="true";
+function getBattleMode(){
+  return localStorage.getItem("pkmnjourney_battlemode")||"normal";
 }
 
-function toggleHardcoreMode(){
-  const cur=getHardcoreMode();
-  localStorage.setItem("pkmnjourney_hardcore",String(!cur));
-  renderHardcoreSection();
+function setBattleMode(m){
+  localStorage.setItem("pkmnjourney_battlemode",m);
+  renderBattleModeSection();
 }
 
-function renderHardcoreSection(){
-  const on=getHardcoreMode();
-  // Render into both profile view and no-profile view containers
-  ["hardcoreSection"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    el.innerHTML=`
-      <div class="mode-card${on?" selected":""}" onclick="toggleHardcoreMode()">
-        <div class="mode-header">
-          <span class="mode-prefix">${on?"▶":" "}</span>
-          <span class="mode-title">${on?"Hardcore ON":"Hardcore OFF"}</span>
-          <span class="mode-tag">${on?"💀 Active":"Inactive"}</span>
-        </div>
-        <div class="mode-desc">${on
-          ?"One loss ends your run immediately. No second chances. Every battle matters."
-          :"Normal mode — a loss is just a loss. Keep battling."
-        }</div>
-        <div class="mode-bullets">
-          <div class="mode-bullet"><span class="mode-bullet-icon">💀</span><span>Any single battle loss ends the run</span></div>
-          <div class="mode-bullet"><span class="mode-bullet-icon">🏆</span><span>Results are saved up to the point of defeat</span></div>
-          <div class="mode-bullet"><span class="mode-bullet-icon">⚠️</span><span>Draft carefully — type matchups are critical</span></div>
-        </div>
+function renderBattleModeSection(){
+  const cur=getBattleMode();
+  const el=document.getElementById("battleModeSection");
+  if(!el)return;
+  const modes=[
+    {
+      id:"normal",title:"Normal",tag:"Default",
+      desc:"Win chance based on Base Stat Total and type effectiveness. One loss ends your run.",
+      bullets:[
+        {icon:"📊",text:"BST ratio determines base win chance"},
+        {icon:"🎯",text:"Type advantages and immunities apply"},
+        {icon:"😤",text:"Fatigue reduces win chance on consecutive wins"},
+      ]
+    },
+    {
+      id:"hard",title:"Hard",tag:"Advanced",
+      desc:"Full stat simulation — ATK vs DEF, SpA vs SpD, Speed and HP all matter. One loss ends your run.",
+      bullets:[
+        {icon:"⚔️",text:"ATK vs DEF or SpA vs SpD — best channel wins"},
+        {icon:"⚡",text:"Faster Pokémon strikes first (+10% bonus)"},
+        {icon:"❤️",text:"HP durability affects how many hits you survive"},
+        {icon:"🎯",text:"Type advantages and immunities apply"},
+      ]
+    },
+  ];
+  el.innerHTML="";
+  modes.forEach(m=>{
+    const card=document.createElement("div");
+    card.className="mode-card"+(m.id===cur?" selected":"");
+    card.innerHTML=`
+      <div class="mode-header">
+        <span class="mode-prefix">${m.id===cur?"▶":" "}</span>
+        <span class="mode-title">${m.title}</span>
+        <span class="mode-tag">${m.tag}</span>
+      </div>
+      <div class="mode-desc">${m.desc}</div>
+      <div class="mode-bullets">
+        ${m.bullets.map(b=>`
+          <div class="mode-bullet">
+            <span class="mode-bullet-icon">${b.icon}</span>
+            <span>${b.text}</span>
+          </div>`).join("")}
       </div>`;
+    card.onclick=()=>setBattleMode(m.id);
+    el.appendChild(card);
   });
 }
 
@@ -441,7 +462,7 @@ function renderTestModeSection(){
         </div>
         <div class="mode-desc">${on
           ?"Using simplified Easy simulation. Results do not count toward profile stats."
-          :"Normal Hard simulation active."
+          :"Normal rules apply — one loss ends your run."
         }</div>
       </div>`;
   });
