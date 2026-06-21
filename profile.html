@@ -70,6 +70,9 @@ main{flex:1;padding:16px;display:flex;flex-direction:column;align-items:center;g
 .no-profile h2{font-size:16px;text-transform:uppercase;letter-spacing:2px;color:var(--text-on-dark);margin-bottom:6px;}
 .no-profile p{font-size:11px;color:var(--accent);margin-bottom:20px;line-height:1.6;}
 
+.btn-danger{background:transparent;color:#c62828;border-color:#c62828;}
+.btn-danger:hover{background:#c62828;color:#fff;}
+
 @media(max-width:500px){
   .ach-grid{grid-template-columns:1fr;}
   .theme-grid{grid-template-columns:1fr;}
@@ -113,8 +116,30 @@ function formatDate(ts){
   return new Date(ts).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 }
 
+function showConfirmDialog(message){
+  return new Promise(resolve=>{
+    // Remove any existing dialog
+    document.getElementById("confirmDialog")?.remove();
+    const dialog=document.createElement("div");
+    dialog.id="confirmDialog";
+    dialog.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+    dialog.innerHTML=`
+      <div style="background:var(--card);border:3px solid var(--border);padding:24px;max-width:360px;width:100%;">
+        <div style="font-size:13px;color:var(--text);margin-bottom:20px;line-height:1.6;">${message}</div>
+        <div style="display:flex;gap:8px;">
+          <button id="confirmYes" class="btn btn-danger" style="flex:1;">✕ Delete</button>
+          <button id="confirmNo" class="btn btn-outline" style="flex:1;">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(dialog);
+    document.getElementById("confirmYes").onclick=()=>{dialog.remove();resolve(true);};
+    document.getElementById("confirmNo").onclick=()=>{dialog.remove();resolve(false);};
+  });
+}
+
 async function deleteProfile(){
-  if(!confirm("Delete your trainer profile? All progress will be lost."))return;
+  const confirmed = await showConfirmDialog("Delete your trainer profile? All progress will be lost. This cannot be undone.");
+  if(!confirmed)return;
   const user=window.pkmnCurrentUser;
   if(user){
     try{
@@ -126,9 +151,9 @@ async function deleteProfile(){
       ]);
       // Delete Firebase Auth account — must be done while user is signed in
       await user.delete();
+      console.log("Auth user deleted successfully");
     } catch(e){
-      // If delete fails due to session expiry, sign out anyway
-      console.warn("Delete error:", e);
+      console.error("Delete error code:", e.code, "message:", e.message);
       if(e.code==="auth/requires-recent-login"){
         alert("For security, please log out and log back in before deleting your account.");
         return;

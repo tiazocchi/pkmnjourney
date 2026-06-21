@@ -248,6 +248,16 @@ const ACHIEVEMENTS=[
   {id:"shiny_first",  item:"hold-item/kings-rock",   name:"A Gleam of Light",desc:"Find your first shiny Pokémon in a pool",hidden:false, check:(t,r,m,dex,shinies)=>shinies>=1},
   {id:"shiny_draft",  item:"hold-item/scope-lens",   name:"Shiny Hunter",   desc:"Draft a shiny Pokémon into your team",   hidden:false, check:(t,r)=>t.some(p=>p.shiny)},
   {id:"shiny_five",   item:"hold-item/lucky-egg",    name:"Fortune Favours", desc:"Find 5 shinies across all your runs",   hidden:false, check:(t,r,m,dex,shinies)=>shinies>=5},
+  
+  // ── Hard mode exclusive achievements ──────────────────
+  // These only unlock when pkmnjourney_battlemode === "hard"
+  // check() receives (team, results, draftMode, dexCount, shinyCount, battleMode)
+  {id:"iron_will",    item:"hold-item/hard-stone",   name:"Iron Will",       desc:"Complete a full run without a single loss in Hard mode",           hidden:false, check:(t,r,m,d,s,bm)=>bm==="hard"&&r.length>0&&r.reduce((s,g)=>s+g.losses,0)===0&&r.every(g=>_champWon(g))},
+  {id:"true_champ",   item:"ball/master",            name:"True Champion",   desc:"Beat all 8 champions in Hard mode",                                hidden:false, check:(t,r,m,d,s,bm)=>bm==="hard"&&r.length===8&&r.every(g=>_champWon(g))},
+  {id:"glass_cannon", item:"hold-item/choice-specs", name:"Glass Cannon",    desc:"Beat a champion with avg team BST under 350 in Hard mode",         hidden:false, check:(t,r,m,d,s,bm)=>bm==="hard"&&t.reduce((s,p)=>s+p.baseTotal,0)/t.length<350&&r.some(g=>_champWon(g))},
+  {id:"speed_runner", item:"hold-item/choice-scarf", name:"Speed Runner",    desc:"Beat a champion with every Pokémon having SPE over 100 in Hard mode",hidden:false, check:(t,r,m,d,s,bm)=>bm==="hard"&&t.every(p=>p.spe>100)&&r.some(g=>_champWon(g))},
+  {id:"the_wall",     item:"hold-item/leftovers",    name:"The Wall",        desc:"Beat a champion with every Pokémon having DEF+SpD over 150 in Hard mode",hidden:false, check:(t,r,m,d,s,bm)=>bm==="hard"&&t.every(p=>(p.def+p.spd)>150)&&r.some(g=>_champWon(g))},
+  
   // Hidden — draft a shiny legendary
   {id:"shiny_legend", item:"hold-item/light-clay",   name:"???",             desc:"???",                                    hidden:true,  check:(t,r)=>t.some(p=>p.shiny&&p.isLegendary)},
 ];

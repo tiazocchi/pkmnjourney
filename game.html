@@ -768,6 +768,18 @@ function saveCaught(mon){
   }catch(e){}
 }
 
+function saveAchToProfile(ach){
+  try{
+    const p=JSON.parse(localStorage.getItem("pkmnjourney_profile"));
+    if(!p)return;
+    if(!p.achievements)p.achievements=[];
+    if(!p.achievements.find(a=>a.id===ach.id)){
+      p.achievements.push({id:ach.id,date:Date.now()});
+      pkmnSaveProfile(p); // syncs to Firestore if logged in
+    }
+  }catch(e){}
+}
+
 async function doReroll(){
   if(S.rerolls<=0)return;S.rerolls--;updateDraftUI();await generatePool();
 }
@@ -1027,7 +1039,7 @@ function checkAchievements(){
   ACHIEVEMENTS.forEach(ach=>{
     if(S.unlockedAchs.find(a=>a.id===ach.id))return;
     try{
-      if(ach.check(S.team,S.journeyResults,S.draftModeUsed,dexCount,shinyCount)){
+      if(ach.check(S.team,S.journeyResults,S.draftModeUsed,dexCount,shinyCount,localStorage.getItem("pkmnjourney_battlemode")||"normal")){
         S.unlockedAchs.push(ach);
         showToast(ach);
         saveAchToProfile(ach);
