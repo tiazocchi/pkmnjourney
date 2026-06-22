@@ -110,7 +110,8 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 .gen-result-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);}
 
 
-.region-toggle-btn{font-family:var(--font);font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px 6px;border:2px solid var(--border);background:var(--muted);color:var(--light);cursor:pointer;text-align:center;min-width:60px;}
+.region-toggle-btn{font-family:var(--font);font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:6px 4px;border:2px solid var(--border);background:var(--muted);color:var(--light);cursor:pointer;text-align:center;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.region-toggle-btn.all-btn{font-size:18px;}
 .region-toggle-btn.active{background:var(--dark);color:var(--text-on-dark);border-color:var(--accent);}
 
 /* ── Region tabs (journey screen) ── */
@@ -138,7 +139,10 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 .modal{background:var(--card);border:3px solid var(--border);box-shadow:6px 6px 0 var(--border);padding:24px;width:100%;max-width:360px;position:relative;}
 .modal-close{position:absolute;top:8px;right:8px;background:transparent;color:var(--light);border:1px solid var(--border);font-family:var(--font);font-size:12px;padding:3px 8px;cursor:pointer;}
 
+
 @media(max-width:500px){
+  .region-grid{grid-template-columns:repeat(3,1fr)!important;}
+  .region-grid{grid-template-columns:repeat(3,1fr);}
   .team-slot img{width:55%;height:55%;}
   nav{padding:0 10px;}
   .battle-detail-grid{grid-template-columns:1fr;}
@@ -162,16 +166,18 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 20px;
 
     <!-- REGION — single select, ALL runs every gen -->
     <div class="section-head">Region</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
-      <button class="region-toggle-btn all-btn active" onclick="selectRegion('all',this)">🌍<br/><span>ALL</span></button>
-      <button class="region-toggle-btn" data-gen="1" onclick="selectRegion(1,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Kanto</span></button>
-      <button class="region-toggle-btn" data-gen="2" onclick="selectRegion(2,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/249.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Johto</span></button>
-      <button class="region-toggle-btn" data-gen="3" onclick="selectRegion(3,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/384.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Hoenn</span></button>
-      <button class="region-toggle-btn" data-gen="4" onclick="selectRegion(4,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/483.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Sinnoh</span></button>
-      <button class="region-toggle-btn" data-gen="5" onclick="selectRegion(5,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/643.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Unova</span></button>
-      <button class="region-toggle-btn" data-gen="6" onclick="selectRegion(6,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/716.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Kalos</span></button>
-      <button class="region-toggle-btn" data-gen="7" onclick="selectRegion(7,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/791.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Alola</span></button>
-      <button class="region-toggle-btn" data-gen="8" onclick="selectRegion(8,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/888.png" style="width:32px;height:32px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Galar</span></button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:4px;margin-bottom:8px;">
+      <button class="region-toggle-btn all-btn active" onclick="selectRegion('all',this)" style="grid-row:span 2;">
+        🌍<br/><span style="font-size:11px;letter-spacing:2px;">ALL</span>
+      </button>
+      <button class="region-toggle-btn" data-gen="1" onclick="selectRegion(1,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Kanto</span></button>
+      <button class="region-toggle-btn" data-gen="2" onclick="selectRegion(2,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/249.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Johto</span></button>
+      <button class="region-toggle-btn" data-gen="3" onclick="selectRegion(3,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/384.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Hoenn</span></button>
+      <button class="region-toggle-btn" data-gen="4" onclick="selectRegion(4,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/483.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Sinnoh</span></button>
+      <button class="region-toggle-btn" data-gen="5" onclick="selectRegion(5,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/643.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Unova</span></button>
+      <button class="region-toggle-btn" data-gen="6" onclick="selectRegion(6,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/716.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Kalos</span></button>
+      <button class="region-toggle-btn" data-gen="7" onclick="selectRegion(7,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/791.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Alola</span></button>
+      <button class="region-toggle-btn" data-gen="8" onclick="selectRegion(8,this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/888.png" style="width:28px;height:28px;image-rendering:pixelated;display:block;margin:0 auto;"/><span>Galar</span></button>
     </div>
 
     <!-- DRAFT MODE — how the pool is generated each pick -->
@@ -745,7 +751,6 @@ function renderPool(mons){
         <span class="tag" style="background:${TC[p.type1]||'#888'}">${p.type1}</span>
         ${p.type2?`<span class="tag" style="background:${TC[p.type2]||'#888'}">${p.type2}</span>`:""}
         ${p.shiny?`<span class="tag" style="background:#c0a020">✨ Shiny</span>`:""}
-        <div style="font-size:7px;color:var(--light);margin-top:1px;">Weight: ${getWeight(p.id).toFixed(3)}</div>
       </div>
       <div class="mon-bst">BST ${p.baseTotal}${p.shiny?" (+10%)":""}</div>
       ${renderStatBars(p)}`;
@@ -1209,6 +1214,7 @@ function downloadCard(){
 
 document.addEventListener("DOMContentLoaded", () => {
   pkmnInjectNav("game");
+  document.getElementById("teamModeSection").style.display="block";
 });
 </script>
 </body>
