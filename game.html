@@ -309,8 +309,29 @@ const TRAINER = n=>`https://play.pokemonshowdown.com/sprites/trainers/${n}.png`;
 // ═══════════════════════════════════════════════
 function bst(p){return p.hp+p.atk+p.def+p.spa+p.spd+p.spe;}
 
-// Easy mode: Pokémon-by-Pokémon BST matchups
-// Sort both sides by BST desc, match 1v1 through to 6v6, win on majority matchups
+// Type multiplier helper — maps effectiveness to a clean multiplier
+function typeMult(eff){
+  return eff===0?.15:eff===.5?.5:eff===1?1:eff===2?2:4;
+}
+
+// Net type score: ratio of your best attack effectiveness vs their best attack effectiveness
+// Two identical types → 1.0 (neutral, 50% on equal stats)
+// You hit 2x, they hit neutral → 2.0 (strong advantage)
+// Both hit 2x → 1.0 (cancels out)
+function netTypeScore(mine, enemy){
+  let offEff=1, defEff=1;
+  for(const mt of [mine.type1,mine.type2].filter(Boolean))
+    for(const et of [enemy.type1,enemy.type2].filter(Boolean))
+      offEff=Math.max(offEff,typeEff(mt,et));
+  for(const et of [enemy.type1,enemy.type2].filter(Boolean))
+    for(const mt of [mine.type1,mine.type2].filter(Boolean))
+      defEff=Math.max(defEff,typeEff(et,mt));
+  return typeMult(offEff)/typeMult(defEff);
+}
+
+// ── Normal mode ────────────────────────────────
+// Win chance based on BST ratio + type matchup
+// Equal Pokémon → 50%, type is 40% of outcome, stats 60%
 function simulateEasy(myTeam, enemyTrainer){
   const myQueue=[...myTeam].sort((a,b)=>(b.shiny?Math.round(bst(b)*1.1):bst(b))-(a.shiny?Math.round(bst(a)*1.1):bst(a)));
   const enQueue=[...enemyTrainer.team].sort((a,b)=>bst(b)-bst(a));
@@ -321,41 +342,22 @@ function simulateEasy(myTeam, enemyTrainer){
     const mine=myQueue[mi];
     const enemy=enQueue[ei];
 
-    // BST with shiny bonus (+10%)
+    // BST ratio — shiny gets +10% bonus
     const myB=mine.shiny?Math.round(bst(mine)*1.1):bst(mine);
     const enB=bst(enemy);
-
-    // Stat ratio — no cap, large gaps matter
     const statScore=myB/Math.max(enB,1);
-    // Quadratic penalty when outstatted — makes large BST gaps decisive
-    const statPenalty=myB<enB?Math.pow(myB/enB,3):1;
 
-    // Offensive: best of your types hitting their types (default neutral=1)
-    let offEff=1;
-    for(const mt of [mine.type1,mine.type2].filter(Boolean))
-      for(const et of [enemy.type1,enemy.type2].filter(Boolean))
-        offEff=Math.max(offEff,typeEff(mt,et));
+    // Quadratic penalty when outstatted (e.g. 400 vs 500 → ×0.64)
+    const statPenalty=myB<enB?Math.pow(myB/enB,2):1;
 
-    // Defensive: best of their types hitting your types (default neutral=1)
-    let defEff=1;
-    for(const et of [enemy.type1,enemy.type2].filter(Boolean))
-      for(const mt of [mine.type1,mine.type2].filter(Boolean))
-        defEff=Math.max(defEff,typeEff(et,mt));
+    // Type: 40% weight, normalized so mutual matchups cancel out
+    const typeScore=netTypeScore(mine,enemy);
 
-    // offScore: immune=0.15, resisted=0.75, neutral=1.0, super effective=1.5, double=1.8
-    const offScore=offEff===0?.15:offEff===.5?.75:offEff===1?1:offEff===2?1.5:1.8;
-    // defPenalty: only applies when enemy hits you super effectively
-    const defPenalty=defEff<=1?0:defEff===2?.25:.5;
-    const typeScore=Math.max(0.1, offScore-defPenalty);
+    // Base win chance: stats 60%, type 40%, calibrated so equal = 50%
+    const raw=(statScore*.6+typeScore*.4)*.50*statPenalty;
 
-    // Raw win probability: stats 80%, type 20%, scaled to keep range realistic
-    const raw=(statScore*.8+typeScore*.2)*.65*statPenalty;
-
-    // Fatigue: -5% per consecutive win (winner stays tired), +5% per enemy consecutive win
-    const fatigueAdj=raw-(myFatigue*0.05)+(enFatigue*0.05);
-
-    // Clamp between 2% and 96%
-    const finalWp=Math.max(.02,Math.min(.96,fatigueAdj));
+    // Fatigue: -5% per consecutive win, +5% per enemy consecutive win
+    const finalWp=Math.max(.02,Math.min(.96,raw-(myFatigue*.05)+(enFatigue*.05)));
     const res=winRoll(finalWp);
 
     matchups.push({
@@ -363,7 +365,7 @@ function simulateEasy(myTeam, enemyTrainer){
       mineTypes:[mine.type1,mine.type2].filter(Boolean),
       enemyTypes:[enemy.type1,enemy.type2].filter(Boolean),
       myBst:myB, enBst:enB,
-      typeScore:`${offScore.toFixed(2)}-${defPenalty.toFixed(2)}=${typeScore.toFixed(2)}`,
+      typeScore:typeScore.toFixed(2),
       winPct:Math.round(finalWp*100),
       fatigue:myFatigue>0?`-${myFatigue*5}%`:"",
       enFatigue:enFatigue>0?`+${enFatigue*5}%`:"",
@@ -377,60 +379,62 @@ function simulateEasy(myTeam, enemyTrainer){
   return{result:won?"win":"loss",margin:Math.abs(myWins-enWins)>1?"decisive":"close",matchups};
 }
 
+// ── Hard mode ──────────────────────────────────
+// Win chance based on actual stats: ATK vs DEF, SpA vs SpD, HP, Speed + type
+// Equal Pokémon → 50%, type is 40% of outcome
 function simulateHard(myTeam, enemyTrainer){
   const myQueue=[...myTeam].sort((a,b)=>(b.shiny?Math.round(bst(b)*1.1):bst(b))-(a.shiny?Math.round(bst(a)*1.1):bst(a)));
   const enQueue=[...enemyTrainer.team].sort((a,b)=>bst(b)-bst(a));
   let mi=0,ei=0,myWins=0,enWins=0,myFatigue=0,enFatigue=0;
   const matchups=[];
+
   while(mi<myQueue.length && ei<enQueue.length){
     const mine=myQueue[mi];
     const enemy=enQueue[ei];
+
+    // Best attacking channel (physical or special), shiny gets +10%
     const myAtk=mine.shiny?Math.round(mine.atk*1.1):mine.atk;
     const mySpA=mine.shiny?Math.round(mine.spa*1.1):mine.spa;
     const offence=Math.max(myAtk-enemy.def, mySpA-enemy.spd);
-    // Offensive: best of your types attacking their types
-    let offEff=1;
-    for(const mt of [mine.type1,mine.type2].filter(Boolean))
-      for(const et of [enemy.type1,enemy.type2].filter(Boolean))
-        offEff=Math.max(offEff,typeEff(mt,et));
 
-    // Defensive: worst of their types attacking your types
-    let defEff=1;
-    for(const et of [enemy.type1,enemy.type2].filter(Boolean))
-      for(const mt of [mine.type1,mine.type2].filter(Boolean))
-        defEff=Math.max(defEff,typeEff(et,mt));
-
-    // Combined: offensive advantage minus defensive penalty
-    const offScore=offEff===0?.15:offEff===.5?.6:offEff===1?1:1.6;
-    const defPenalty=defEff===0?.0:defEff===.5?.0:defEff===1?.0:defEff===2?.2:0.4; // 2× = -0.2, 4× = -0.4
-    const typeScore=Math.max(0.1, offScore - defPenalty);
+    // Durability: how many of their hits you survive (capped at 3)
     const enOffence=Math.max(enemy.atk-mine.def, enemy.spa-mine.spd, 1);
     const durability=Math.min(mine.hp/enOffence, 3);
+
+    // Speed: faster Pokémon gets a small bonus
     const speedBonus=mine.spe>enemy.spe?1.1:0.9;
-    const statPenalty=bst(mine)<bst(enemy)?Math.pow(bst(mine)/bst(enemy),3):1;
-    // Normalize so two equal Pokémon = ~50% win chance
-    // Floor offence at 30 so high SpD walls don't zero out good attackers
-    const effectiveOffence=Math.max(offence, 30);
-    const raw=effectiveOffence*typeScore*durability*speedBonus/225*statPenalty;
-    const fatigueAdj=raw-(myFatigue*0.10)+(enFatigue*0.10);
-    const finalWp=Math.max(.04,Math.min(.96,fatigueAdj));
+
+    // Quadratic penalty when outstatted
+    const statPenalty=bst(mine)<bst(enemy)?Math.pow(bst(mine)/bst(enemy),2):1;
+
+    // Type: 40% weight blended in, normalized so mutual matchups cancel out
+    const typeScore=netTypeScore(mine,enemy);
+    const typeBlend=0.6+typeScore*0.4;
+
+    // Floor offence at 30 so walls don't zero out good attackers
+    // Divisor 225 calibrated so equal Pokémon = ~50%
+    const effectiveOffence=Math.max(offence,30);
+    const raw=effectiveOffence*typeBlend*durability*speedBonus/225*statPenalty;
+
+    // Fatigue: -5% per consecutive win, +5% per enemy consecutive win
+    const finalWp=Math.max(.04,Math.min(.96,raw-(myFatigue*.05)+(enFatigue*.05)));
     const res=winRoll(finalWp);
+
     matchups.push({
       mine:mine.name, enemy:cap(enemy.name.replace(/-/g," ")),
       mineTypes:[mine.type1,mine.type2].filter(Boolean),
       enemyTypes:[enemy.type1,enemy.type2].filter(Boolean),
       myBst:bst(mine), enBst:bst(enemy),
-      typeScore:`${offScore.toFixed(2)}-${defPenalty.toFixed(2)}=${typeScore.toFixed(2)}`,
+      typeScore:typeScore.toFixed(2),
       winPct:Math.round(finalWp*100),
-      fatigue:myFatigue>0?`-${myFatigue*10}%`:"",
-      enFatigue:enFatigue>0?`+${enFatigue*10}%`:"",
+      fatigue:myFatigue>0?`-${myFatigue*5}%`:"",
+      enFatigue:enFatigue>0?`+${enFatigue*5}%`:"",
       result:res.result, margin:res.margin
     });
+
     if(res.result==="win"){myWins++;myFatigue++;enFatigue=0;ei++;}
     else{enWins++;enFatigue++;myFatigue=0;mi++;}
   }
-  // You win if you knocked out all their pokemon (ei reached end)
-  // They win if they knocked out all yours (mi reached end)
   const won=ei>=enQueue.length;
   return{result:won?"win":"loss",margin:Math.abs(myWins-enWins)>1?"decisive":"close",matchups};
 }
