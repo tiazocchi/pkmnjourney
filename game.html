@@ -75,19 +75,20 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 clamp
 /* ── Section headers ── */
 .section-head{font-size:var(--fs-xs);font-weight:bold;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin:clamp(12px,3vw,20px) 0 clamp(6px,1.5vw,10px);border-bottom:1px solid var(--border);padding-bottom:5px;}
 
-/* ── Region grid ── */
+/* ── Region grid ──
+   Always: ALL on the left spanning 2 rows, 4 tiles per row on the right.
+   Sizing shrinks on mobile via clamp but layout stays identical.          */
 .region-grid{
   display:grid;
-  grid-template-columns:clamp(70px,15vw,120px) repeat(4,1fr);
+  grid-template-columns:clamp(56px,14vw,110px) repeat(4,1fr);
   grid-template-rows:auto auto;
-  gap:var(--gap-sm);
+  gap:clamp(3px,1vw,8px);
   margin-bottom:var(--gap-md);
 }
-/* ALL button spans 2 rows */
 .region-toggle-btn.all-btn{
   grid-row:1/3;
-  font-size:clamp(22px,4vw,34px);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  font-size:clamp(20px,4vw,34px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
 }
 .region-toggle-btn{
   font-family:var(--font);
@@ -226,28 +227,25 @@ nav{background:var(--dark);border-bottom:3px solid var(--accent);padding:0 clamp
    MOBILE  (≤ 540px)
 ═══════════════════════════════ */
 @media(max-width:540px){
-  .region-grid{
-    grid-template-columns:1fr 1fr 1fr;
-    grid-template-rows:unset;
+  /* Region grid: keep ALL-left + 4-per-row, icons just get smaller via clamp */
+  :root{
+    --icon-region: clamp(28px,7vw,40px);
+    --icon-opt:    clamp(24px,6vw,32px);
+    --team-slot:   clamp(40px,10vw,56px);
   }
-  .region-toggle-btn.all-btn{
-    grid-row:unset;
-    grid-column:1/-1;       /* full width on its own row */
-    flex-direction:row;justify-content:center;gap:10px;
-    padding:clamp(8px,2vw,12px);
-  }
+  .region-toggle-btn span{font-size:clamp(7px,2vw,10px);}
   .stat-grid{grid-template-columns:repeat(2,1fr);}
   .battle-detail-grid{grid-template-columns:1fr;}
-  .card{padding:clamp(10px,3vw,16px);}
+  .card{padding:clamp(10px,3vw,14px);}
 }
 
 /* ═══════════════════════════════
-   VERY SMALL  (≤ 380px)
+   VERY SMALL  (≤ 360px)
 ═══════════════════════════════ */
-@media(max-width:380px){
-  .region-grid{grid-template-columns:1fr 1fr;}
-  .region-toggle-btn.all-btn{grid-column:1/-1;}
-  .team-slot img{width:40px;height:40px;}
+@media(max-width:360px){
+  :root{--icon-region:24px;}
+  .region-toggle-btn{padding:6px 2px;}
+  .team-slot img{width:36px;height:36px;}
 }
 </style>
 </head>
